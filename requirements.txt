@@ -1,0 +1,13 @@
+langgraph>=0.0.30
+langchain-groq
+ddgs
+pymupdf
+beautifulsoup4
+pandas
+openpyxl
+python-dotenv
+mcp<2.0.0
+pytest
+pytest-asyncio
+fastapi>=0.110.0
+uvicorn>=0.28.0
