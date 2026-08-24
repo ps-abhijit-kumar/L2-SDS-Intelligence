@@ -1,148 +1,38 @@
 import os
-import re
+import sys
+
+# Ensure project root is on sys.path for subprocess invocations
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import json
 import openpyxl
 import pandas as pd
 from typing import Optional, Dict, Any, List, Set
 from mcp.server.fastmcp import FastMCP
 
+from src.workbook_utils import (
+    COLUMN_SYNONYMS,
+    INVALID_PRODUCT_VALUES,
+    is_valid_product_value,
+    detect_column_mapping,
+    classify_sheet,
+    inspect_workbook
+)
+
 mcp = FastMCP("ExcelMCP")
 
 # Target file configuration
 EXCEL_FILE = os.getenv("EXCEL_FILE_PATH", "sample_requests_eval.xlsx")
 
-COLUMN_SYNONYMS = {
-    'product': [
-        'product product name', 'product name', 'product_name', 'productname',
-        'chemical name', 'chemical_name', 'chemical', 'substance name', 'substance',
-        'item name', 'item', 'material name', 'material', 'trade name', 'product'
-    ],
-    'company': [
-        'product company name', 'company name', 'product company',
-        'manufacturer name', 'manufacturer', 'supplier name', 'supplier',
-        'vendor name', 'vendor', 'brand owner', 'brand', 'product manufacturer', 'company'
-    ],
-    'part_number': [
-        'part numbers', 'part number', 'part_number', 'part no', 'part_no',
-        'product number', 'product no', 'product id', 'product_id',
-        'catalog number', 'catalog no', 'cas number', 'cas no', 'cas',
-        'material number', 'client product id', 'item code', 'sku'
-    ],
-    'language': [
-        'sds language', 'document language', 'language', 'lang'
-    ],
-    'country': [
-        'destination country', 'country name', 'jurisdiction', 'market', 'region', 'country'
-    ]
-}
-
-INVALID_PRODUCT_VALUES = {
-    '', 'nan', 'none', 'null', 'n/a', 'na', 'total', 'grand total',
-    'subtotal', 'summary', 'unknown', 'undefined', 'nil', '-'
-}
-
-def is_valid_product_value(val: Any, col_name: str = '') -> bool:
-    if val is None or pd.isna(val):
-        return False
-    s = str(val).strip()
-    if len(s) < 2:
-        return False
-    s_lower = s.lower()
-    if s_lower in INVALID_PRODUCT_VALUES:
-        return False
-    if col_name and s_lower == col_name.strip().lower():
-        return False
-    if s_lower.startswith(('total', 'grand total', 'summary', 'subtotal')):
-        return False
-    return True
-
-def detect_column_mapping(columns: List[str]) -> Dict[str, Optional[str]]:
-    mapping = {}
-    normalized_cols = {col: re.sub(r'[^a-z0-9]', ' ', str(col).lower()).strip() for col in columns}
-    
-    for field in ['product', 'company', 'part_number', 'language', 'country']:
-        synonyms = COLUMN_SYNONYMS[field]
-        matched_col = None
-        
-        # 1. Exact match on normalized string
-        for syn in synonyms:
-            for original_col, norm in normalized_cols.items():
-                if norm == syn:
-                    matched_col = original_col
-                    break
-            if matched_col:
-                break
-                
-        # 2. Heuristic word-boundary / substring match
-        if not matched_col:
-            for syn in synonyms:
-                for original_col, norm in normalized_cols.items():
-                    if original_col in mapping.values():
-                        continue
-                    if field == 'product':
-                        if any(x in norm for x in ['company', 'manufacturer', 'supplier', 'id', 'number', 'state', 'date', 'comment', 'link']):
-                            continue
-                        if 'product' in norm or 'chemical' in norm or 'substance' in norm or 'item' in norm or 'material' in norm:
-                            matched_col = original_col
-                            break
-                    elif field == 'company':
-                        if 'company' in norm or 'manufacturer' in norm or 'supplier' in norm or 'vendor' in norm or 'brand' in norm:
-                            if 'id' in norm and any('name' in k for k in normalized_cols.values()):
-                                continue
-                            matched_col = original_col
-                            break
-                    elif field == 'part_number':
-                        if any(x in norm for x in ['part', 'catalog', 'cas', 'sku']) or (('product' in norm or 'item' in norm) and any(y in norm for y in ['no', 'number', 'id', 'code'])):
-                            matched_col = original_col
-                            break
-                    elif field == 'language':
-                        if 'lang' in norm:
-                            matched_col = original_col
-                            break
-                    elif field == 'country':
-                        if any(x in norm for x in ['country', 'jurisdiction', 'market', 'region']):
-                            matched_col = original_col
-                            break
-                if matched_col:
-                    break
-                    
-        mapping[field] = matched_col
-    return mapping
-
-def classify_sheet(sheet_name: str, columns: List[str], valid_product_rows_count: int, total_physical_rows: int) -> str:
-    norm_name = re.sub(r'[^a-z0-9]', '', sheet_name.lower())
-    
-    # 1. Obvious summary
-    if any(k in norm_name for k in ['summary', 'pivot', 'total', 'kpi', 'dashboard', 'overview']):
-        return 'SUMMARY'
-        
-    # 2. Obvious supporting data
-    if any(k in norm_name for k in ['allocation', 'lookup', 'xref', 'matrix', 'reference', 'config', 'log', 'mapping']):
-        return 'SUPPORTING_DATA'
-        
-    # 3. If no valid product rows found
-    if valid_product_rows_count == 0:
-        return 'SUPPORTING_DATA' if total_physical_rows > 50 else 'UNKNOWN'
-        
-    # 4. Check for SDS Request sheet indicators
-    cols_norm = ' '.join([re.sub(r'[^a-z0-9]', ' ', str(c).lower()) for c in columns])
-    has_company = any(k in cols_norm for k in ['company', 'manufacturer', 'supplier', 'vendor'])
-    has_sds_keywords = any(k in cols_norm for k in ['sds', 'language', 'country', 'jurisdiction', 'part number', 'request'])
-    
-    if (has_company or has_sds_keywords) and valid_product_rows_count > 0:
-        return 'SDS_REQUESTS'
-        
-    if 'part' in norm_name or norm_name == 'sheet1':
-        return 'SDS_REQUESTS'
-        
-    return 'UNKNOWN'
-
 @mcp.tool()
 def get_pending_requests(column_mapping_json: str = "", selected_sheets_json: str = "") -> str:
     """Reads all valid pending SDS request rows from the eligible/selected sheets."""
-    if not os.path.exists(EXCEL_FILE):
+    target_path = os.getenv("EXCEL_FILE_PATH", EXCEL_FILE)
+    if not os.path.exists(target_path):
         return "[]"
-    
+
     custom_mapping = {}
     if column_mapping_json:
         try:
@@ -160,7 +50,7 @@ def get_pending_requests(column_mapping_json: str = "", selected_sheets_json: st
             pass
 
     try:
-        excel_file = pd.ExcelFile(EXCEL_FILE)
+        excel_file = pd.ExcelFile(target_path)
         sheet_names = excel_file.sheet_names
     except Exception:
         sheet_names = ["Sheet1"]
@@ -173,7 +63,7 @@ def get_pending_requests(column_mapping_json: str = "", selected_sheets_json: st
             continue
 
         try:
-            df = pd.read_excel(EXCEL_FILE, sheet_name=sheet_name)
+            df = pd.read_excel(target_path, sheet_name=sheet_name)
         except Exception:
             continue
 
@@ -231,7 +121,7 @@ def get_pending_requests(column_mapping_json: str = "", selected_sheets_json: st
             row_dict['_sheet_name'] = sheet_name
             row_dict['_excel_row'] = idx + 2  # 1-indexed in Excel (row 1 is header)
             row_dict['_row_index'] = global_idx
-            
+
             requests.append(row_dict)
             global_idx += 1
 
@@ -248,38 +138,36 @@ def update_request_status(
     excel_row: int = 0
 ) -> str:
     """Updates the specified row in the specified Excel sheet with the results."""
-    if not os.path.exists(EXCEL_FILE):
+    target_path = os.getenv("EXCEL_FILE_PATH", EXCEL_FILE)
+    if not os.path.exists(target_path):
         return "Error: File not found."
 
-    wb = openpyxl.load_workbook(EXCEL_FILE)
-    
+    wb = openpyxl.load_workbook(target_path)
+
     if sheet_name and sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
     else:
         ws = wb.active
-    
-    # Identify header columns
+
     headers = {cell.value: idx + 1 for idx, cell in enumerate(ws[1]) if cell.value}
-    
-    # Ensure our output columns exist
+
     for col_name in ["Found URL", "Status", "Confidence", "Reasoning"]:
         if col_name not in headers:
             col_num = ws.max_column + 1
             ws.cell(row=1, column=col_num, value=col_name)
             headers[col_name] = col_num
-            
-    # Determine target Excel row
+
     if excel_row > 0:
         target_row = excel_row
     else:
         target_row = row_index + 2
-        
+
     ws.cell(row=target_row, column=headers["Found URL"], value=final_url)
     ws.cell(row=target_row, column=headers["Status"], value=status)
     ws.cell(row=target_row, column=headers["Confidence"], value=confidence)
     ws.cell(row=target_row, column=headers["Reasoning"], value=reasoning)
-    
-    wb.save(EXCEL_FILE)
+
+    wb.save(target_path)
     return "Success"
 
 if __name__ == "__main__":

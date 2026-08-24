@@ -4,9 +4,9 @@
 
 ## 1. Executive Summary
 
-**L2 SDS Intelligence** is a production-grade, AI-powered Safety Data Sheet (SDS) discovery, verification, and intelligence platform. It automates chemical compliance retrieval by pairing a deterministic search and ranking pipeline with a cyclic **LangGraph ReAct agent**, **FastMCP Excel storage integration**, and **Groq Cloud LLM semantic validation**.
+**L2 SDS Intelligence** is an agentic AI platform for chemical Safety Data Sheet (SDS) discovery, retrieval, and multi-stage verification. It pairs dynamic **LangGraph action selection** with an **independent reflection/verification stage**, **SSRF-safe streaming document fetching**, **strict Pydantic structured output validation**, and a **FastMCP Excel storage transport boundary**.
 
-The system prevents hallucinations by enforcing a **"Retrieval Before Generation"** philosophy: compliance decisions are derived strictly from raw text extracted from real manufacturer PDF documents rather than generative synthesis.
+The system prevents hallucinations by enforcing a strict **"Retrieval Before Generation"** invariant: compliance decisions are derived strictly from raw text extracted from real manufacturer PDF documents rather than generative synthesis.
 
 ---
 
@@ -21,124 +21,82 @@ The system prevents hallucinations by enforcing a **"Retrieval Before Generation
                                          ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                              FastAPI Backend Layer                              │
-│         (/api/sds/search, /api/health, /api/stats, /api/history, /api/review)   │
+│         (/api/sds/search, /api/health, /api/stats, /api/history, /api/batch/*)  │
 └────────────────────────────────────────┬────────────────────────────────────────┘
                                          │ Async Ainvoke
                                          ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                        LangGraph StateGraph Agent Engine                        │
-│                       (Cyclic ReAct State Machine Node)                         │
-└────────────┬───────────────────────────┬───────────────────────────┬────────────┘
-             │ Tool Call                 │ Tool Call                 │ Tool Call
-             ▼                           ▼                           ▼
-┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐
-│    search_duckduckgo    │ │   rank_sds_candidates   │ │   fetch_document_text   │
-│  (ddgs Search Provider) │ │ (Utility Ranker 0-100)  │ │ (PyMuPDF fitz Extractor)│
-└─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘
-             │                           │                           │
-             └───────────────────────────┼───────────────────────────┘
-                                         │ Document Text Evidence & Prompt State
-                                         ▼
+│                                                                                 │
+│   ┌──────────────────┐      ┌─────────────┐      ┌──────────────┐              │
+│   │  decide_action   │ ───► │ search_node │ ───► │  rank_node   │              │
+│   └────────┬─────────┘      └─────────────┘      └──────┬───────┘              │
+│            ▲                                            │                      │
+│            │           ┌────────────────────────────────┘                      │
+│            │           ▼                                                       │
+│            │    ┌──────────────┐      ┌─────────────────┐                      │
+│            └─── │  fetch_node  │ ───► │  draft_decision │                      │
+│                 └──────────────┘      └────────┬────────┘                      │
+│                                                │                               │
+│                                                ▼                               │
+│                                     ┌─────────────────────┐                    │
+│                                     │  verify_decision    │                    │
+│                                     │(Independent Review) │                    │
+│                                     └──────────┬──────────┘                    │
+│                                                │                               │
+│                     ┌──────────────────────────┴──────────────────────────┐    │
+│                     ▼                                                     ▼    │
+│            ┌─────────────────┐                                  ┌────────────┐ │
+│            │    corrective   │                                  │extract_    │ │
+│            │    action_node  │ ───► [extract_final_node] ───►   │final_node  │ │
+│            └─────────────────┘                                  └─────┬──────┘ │
+└───────────────────────────────────────────────────────────────────────┼────────┘
+                                                                        │ Verified Result
+                                                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           Groq Cloud LLM Validation                             │
-│                  (openai/gpt-oss-120b Function Calling Node)                   │
-└────────────────────────────────────────┬────────────────────────────────────────┘
-                                         │ Pydantic SDSValidationResult
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           FastMCP Excel Server & Audit                          │
-│               (sample_requests_eval.xlsx & logs/agent_trace.jsonl)              │
+│                         FastMCP Excel Transport Boundary                        │
+│             (sample_requests_eval.xlsx & logs/agent_trace.jsonl)                │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Core Component Breakdown
+## 3. Core Architectural Components
 
-### 3.1 Frontend Command Center (`frontend/`)
-* **Framework**: React 18 with TypeScript and Vite.
-* **State Management**: TanStack React Query v5 for asynchronous query caching, background polling, and optimistic cache invalidation.
-* **Design System**: Tailored dark command-center aesthetic (`#070A12` base, electric cyan accents, glassmorphic panels, glowing status badges).
-* **Key Workspaces**:
-  1. **Executive Dashboard**: Real-time KPI telemetry, subsystem operational health, verdict distribution charts, and recent activity logs.
-  2. **SDS Verification Console**: Chemical search form with preset shortcuts, live execution progress timeline, structured decision cards, and document preview modals.
-  3. **Verification Audit History**: Searchable and filterable table reading directly from `logs/agent_trace.jsonl` with deep LangGraph message trace inspection.
-  4. **Human Review Queue**: Focused compliance view for results flagged as `NEEDS REVIEW`.
-  5. **Agent Trace Explorer**: Interactive visualization of the LangGraph state machine with step-by-step tool invocation payloads.
-  6. **System Settings**: Model parameters, recursion limits, and environment diagnostics.
+### 3.1 Dynamic Action Selection (`src/workflow.py`)
+* The agent evaluates current state, prerequisites, previous observations, and action history to dynamically select discrete actions:
+  - `SEARCH`: Formulates structured search queries combining chemical name, manufacturer, part number, and jurisdiction.
+  - `RANK`: Evaluates and scores discovered candidate URLs using deterministic multi-factor heuristics (0–100).
+  - `FETCH`: Safely downloads document streams with SSRF validation, redirect checks, and stream size caps.
+  - `DRAFT`: Synthesizes gathered evidence into a preliminary draft verdict.
+  - `VERIFY`: Executes independent reflection/verification over the draft and evidence.
+  - `RETRY`: Selects alternative candidate URLs if verification reveals insufficient evidence.
+  - `FINISH`: Validates final output with strict Pydantic schemas.
 
-### 3.2 Backend REST Layer (`server.py`)
-* Built with **FastAPI** and **Uvicorn**, providing CORS-enabled REST endpoints:
-  * `GET /api/health`: Real telemetry for LangGraph agent, Groq configuration, FastMCP server, and Excel database.
-  * `POST /api/sds/search`: Asynchronously invokes `create_sds_graph().ainvoke(...)`, logs execution traces to `logs/agent_trace.jsonl`, and returns verified results.
-  * `GET /api/history`: Returns audit records with keyword filtering, status filtering, and pagination.
-  * `GET /api/history/{id}`: Returns deep trace records by ID.
-  * `GET /api/stats`: Computes actual aggregate KPI metrics (total verifications, exact matches, resolution rate, average confidence).
-  * `GET /api/review`: Filters records flagged for human review.
-  * `GET /api/trace/latest`: Returns the most recent execution message sequence.
+### 3.2 Independent Reflection & Verification Stage
+* Programmatically and semantically cross-checks draft decisions:
+  - **Grounding Validation**: Enforces invariant `final_url in discovered_candidates AND final_url in successful_fetches`.
+  - **Authenticity Check**: Verifies presence of genuine GHS/OSHA SDS headers.
+  - **Manufacturer Match**: Detects manufacturer discrepancies and downgrades `EXACT MATCH` -> `BEST AVAILABLE` or `NEEDS REVIEW`.
+  - **Product Match**: Verifies chemical identity tokens against document text.
+  - **Part Number & CAS Match**: Confirms catalog numbers and CAS registry identifiers.
+  - **Confidence Calibration**: Ensures confidence is bounded (`0 <= confidence <= 100`) and justified by evidence.
 
-### 3.3 LangGraph ReAct Agent Engine (`src/workflow.py`)
-* Orchestrates agent execution using `langgraph.graph.StateGraph` and `langgraph.graph.MessagesState`.
-* **State Tracking (`src/state.py`)**:
-  * `messages`: Chronological array of interaction messages (`SystemMessage`, `HumanMessage`, `AIMessage`, `ToolMessage`).
-  * `row_data`: Target request attributes (Product Name, Manufacturer Company, Jurisdiction, Language).
-  * `final_status`: Final verification verdict (`EXACT MATCH`, `BEST AVAILABLE`, `NEEDS REVIEW`, `ERROR`).
-  * `final_url`: Confirmed direct URL to the Safety Data Sheet document.
-  * `confidence`: Computed utility ranking score (0–100).
-  * `detailed_reasoning`: LLM-generated compliance rationale explaining document validation.
-* **Control Flow**:
-  1. Formulates structured search queries combining product name, manufacturer, jurisdiction, and `"SDS PDF"`.
-  2. Calls `search_duckduckgo` to retrieve candidate links and snippets.
-  3. Evaluates and scores candidate URLs using `rank_sds_candidates`.
-  4. Downloads and extracts document text using `fetch_document_text`.
-  5. Cross-checks evidence using Groq Cloud LLM function calling.
-  6. Enforces recursion limits (`recursion_limit=15`) to prevent infinite reasoning loops.
+### 3.3 SSRF & Network Safety Layer (`src/security.py`)
+* **Scheme Restriction**: Strictly `http` and `https` allowed; blocks `file://`, `ftp://`, `gopher://`, etc.
+* **IP Filtering**: DNS resolution verifies that resolved IP addresses do not belong to loopback (`127.0.0.0/8`, `::1`), private (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local (`169.254.0.0/16`), or cloud metadata endpoints (`169.254.169.254`, `metadata.google.internal`).
+* **Redirect Safety**: Intercepts redirect hops and re-validates each target URL against SSRF policy before connection.
+* **Stream Bounds**: Reads downloads in 64KB chunks up to a strict 10MB maximum limit.
 
-### 3.4 Deterministic SDS Discovery & Extraction Tools (`src/tools.py`)
-* `search_duckduckgo`: Rate-limit-free web discovery tailored for official chemical safety data repositories.
-* `rank_sds_candidates`: Deterministic heuristic scoring engine (0–100) prioritizing official manufacturer domains, PDF document extensions, and product/company keyword matches.
-* `fetch_document_text`: Downloads target document streams, parses binary PDF pages using `PyMuPDF (fitz)` or HTML structures via `BeautifulSoup4`, and extracts safety text snippets.
+### 3.4 Multi-Page SDS Parser & Normalization (`src/sds_parser.py`)
+* Reads first 6 pages of binary PDF documents using `PyMuPDF (fitz)` or full visible HTML structures via `BeautifulSoup4`.
+* Extracts standard 16 GHS/OSHA sections, CAS numbers (`\b\d{2,7}-\d{2}-\d\b`), catalog/part numbers, revision dates, and language/jurisdiction markers.
 
-### 3.5 Model Context Protocol (MCP) Integration (`src/mcp_server.py` & `src/mcp_client.py`)
+### 3.5 FastMCP Excel Storage Transport (`src/mcp_server.py` & `src/mcp_client.py`)
 * Exposes standard MCP tools over `stdio` transport using `FastMCP`:
-  * `get_pending_requests`: Reads target rows from `sample_requests_eval.xlsx`, automatically skipping already resolved rows.
-  * `update_request_status`: Writes verified status, confirmed URL, confidence score, and reasoning back into Excel in-place.
-* The Excel database functions as persistent, auditable memory for batch evaluations.
+  - `get_pending_requests`: Reads target rows from Excel workbooks with automated sheet classification and column mapping.
+  - `update_request_status`: Writes verified status, confirmed URL, confidence score, and reasoning back into Excel in-place.
+* **Intentional Hybrid Architecture**: Excel persistence is isolated across the MCP transport boundary, while search, rank, fetch, and parser tools remain LangGraph-native for tight observation streaming and performance.
 
----
-
-## 4. SDS Lifecycle & Decision Flow
-
-```text
-Incoming Chemical Request
-   │
-   ▼
-[ 1. Query Formulation ] ──► Injects product name, manufacturer, jurisdiction, and "SDS PDF"
-   │
-   ▼
-[ 2. Autonomous Discovery ] ──► search_duckduckgo returns raw candidate URLs & snippets
-   │
-   ▼
-[ 3. Deterministic Utility Ranking ] ──► rank_sds_candidates scores URLs (0-100)
-   │
-   ▼
-[ 4. Document Fetch & Extraction ] ──► fetch_document_text extracts raw PDF text via PyMuPDF
-   │
-   ▼
-[ 5. LLM Semantic Validation ] ──► Groq Cloud LLM checks manufacturer match, product, & GHS elements
-   │
-   ▼
-[ 6. Schema Extraction & Sanity Check ] ──► URL validation, placeholder downgrade & final state
-   │
-   ├── Confidence >= 80% & Manufacturer Verified ──► EXACT MATCH
-   ├── Minor Jurisdiction / Variant Match         ──► BEST AVAILABLE
-   └── Low Confidence / Unverified Supplier       ──► NEEDS REVIEW (Routed to Human Queue)
-```
-
----
-
-## 5. Security & Credential Isolation
-
-1. **Zero Secret Leakage**: `GROQ_API_KEY` is strictly confined to the backend server environment and is never bundled into client-side JavaScript or returned in API responses.
-2. **CORS Isolation**: The FastAPI backend restricts access to authorized frontend origins.
-3. **Audit Immutability**: Real agent execution steps and tool payloads are persisted to `logs/agent_trace.jsonl` for compliance audits.
+### 3.6 Isolated Batch Job Management (`server.py`)
+* Replaces unsafe process-global mutable state with a thread-safe `BatchJobManager` tracking isolated jobs by `job_id` with asyncio locks.

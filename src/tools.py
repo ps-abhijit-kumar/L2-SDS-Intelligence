@@ -1,13 +1,14 @@
 import re
-import urllib.request
-import pymupdf as fitz  # PyMuPDF
-from bs4 import BeautifulSoup
+import time
+from typing import List, Dict, Any, Optional
 from langchain_core.tools import tool
 from ddgs import DDGS
-import time
+
+from src.security import safe_fetch_document, SecurityError
+from src.sds_parser import parse_sds_document, normalize_identifier, normalize_text
+from src.schema import SDSEvidence
 
 TRUSTED_SITES = [
-    # --- Major Chemical & Lab Suppliers (Highest Coverage) ---
     "sigmaaldrich.com",
     "fishersci.com",
     "thermofisher.com",
@@ -16,17 +17,13 @@ TRUSTED_SITES = [
     "merckmillipore.com",
     "tcichemicals.com",
     "spectrumchemical.com",
-    "scbt.com",                 # Santa Cruz Biotechnology
-    "caymanchem.com",           # Cayman Chemical
-
-    # --- Life Science & Reagent Vendors ---
+    "scbt.com",
+    "caymanchem.com",
     "bio-rad.com",
     "promega.com",
-    "neb.com",                  # New England Biolabs
+    "neb.com",
     "abcam.com",
-    "cellsignal.com",           # Cell Signaling Technology
-
-    # --- Industrial & Specialty Chemical Manufacturers ---
+    "cellsignal.com",
     "3m.com",
     "ecolab.com",
     "dow.com",
@@ -34,29 +31,26 @@ TRUSTED_SITES = [
     "dupont.com",
     "eastman.com",
     "evonik.com",
-
-    # --- Industrial Gas & Specialty Material Vendors ---
+    "honeywell.com",
     "airgas.com",
     "linde.com",
     "mathesongas.com",
-
-    # --- Institutional, Regulatory & Open Databases ---
     "cdc.gov/niosh",
     "echa.europa.eu",
-    "pubchem.ncbi.nlm.nih.gov",  # Direct GHS / SDS data sections
-    "ilpi.com",                 # Household Chemical / MSDS HyperGlossary & Links
+    "pubchem.ncbi.nlm.nih.gov",
+    "ilpi.com",
     "msdssolutions.com",
 ]
 
 @tool
 def search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
     """
-    Executes a web search using DuckDuckGo to find potential Safety Data Sheets.
-    Use this to gather candidates. It returns deduplicated results containing URL and text snippet.
+    Executes a targeted web search using DuckDuckGo to discover candidate Safety Data Sheets.
+    Returns a deduplicated list of search results containing url, snippet, and title.
     """
     results = []
     unique_urls = set()
-    
+
     try:
         with DDGS() as ddgs:
             search_res = ddgs.text(query, max_results=max_results)
@@ -67,82 +61,129 @@ def search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
                         unique_urls.add(url)
                         results.append({
                             "url": url,
+                            "title": res.get("title", ""),
                             "snippet": res.get("body", "")
                         })
-            time.sleep(0.5) # rate limiting
+            time.sleep(0.3)
     except Exception as e:
-        return [{"error": f"Search failed: {e}"}]
-        
+        return [{"error": f"Search failed: {str(e)}"}]
+
     return results
 
 @tool
-def rank_sds_candidates(candidates: list[dict], target_product: str, target_company: str) -> list[dict]:
+def rank_sds_candidates(
+    candidates: list[dict],
+    target_product: str,
+    target_company: str,
+    target_part_number: str = "",
+    target_country: str = ""
+) -> list[dict]:
     """
-    Deterministically ranks search candidates based on heuristics.
-    Pass in the list of search results, and the requested product and company name.
-    Returns the same list, but sorted with the most likely candidates first, adding a 'score'.
+    Deterministically scores and ranks candidate SDS URLs based on multi-factor heuristics.
+    Factors: Product name match, company/manufacturer match, part number match, trusted domain bonus,
+    and PDF filetype preference. Returns candidates sorted in descending order of utility score (0-100).
     """
-    target_product = target_product.lower()
-    target_company = target_company.lower()
-    company_cleaned = re.sub(r'[^a-z0-9]', '', target_company)
-    
+    prod_norm = normalize_text(target_product)
+    comp_norm = normalize_text(target_company)
+    part_norm = normalize_identifier(target_part_number)
+    country_norm = normalize_text(target_country)
+
     ranked = []
     for cand in candidates:
-        if "error" in cand:
+        if not isinstance(cand, dict) or "error" in cand or not cand.get("url"):
             continue
-            
-        content = str(cand.get("snippet", "")).lower()
+
         url = str(cand.get("url", "")).lower()
-        
+        title = str(cand.get("title", "")).lower()
+        snippet = str(cand.get("snippet", "")).lower()
+        combined_text = f"{title} {snippet}"
+
         score = 0
-        if target_product in url or target_product in content:
-            score += 40
-            
-        if company_cleaned and company_cleaned in url:
-            score += 30
-        elif target_company and target_company in content:
-            score += 15
-            
+
+        if prod_norm:
+            if prod_norm in url:
+                score += 35
+            elif prod_norm in combined_text:
+                score += 25
+            else:
+                prod_tokens = prod_norm.split()
+                if prod_tokens:
+                    token_matches = sum(1 for tok in prod_tokens if tok in combined_text or tok in url)
+                    score += int(20 * (token_matches / len(prod_tokens)))
+
+        if comp_norm:
+            comp_clean = re.sub(r'[^a-z0-9]', '', comp_norm)
+            if comp_clean and comp_clean in url:
+                score += 25
+            elif comp_norm in combined_text:
+                score += 15
+            else:
+                comp_tokens = comp_norm.split()
+                if comp_tokens:
+                    token_matches = sum(1 for tok in comp_tokens if tok in combined_text or tok in url)
+                    score += int(10 * (token_matches / len(comp_tokens)))
+
+        if part_norm:
+            clean_url = re.sub(r'[^a-z0-9]', '', url)
+            clean_text = re.sub(r'[^a-z0-9]', '', combined_text)
+            if part_norm in clean_url:
+                score += 15
+            elif part_norm in clean_text:
+                score += 10
+
         if ".pdf" in url:
-            score += 20
-            
-        if "safety data sheet" in content or "sds" in url or "msds" in url:
-            score += 10
-            
-        # Bonus for trusted sites
-        if any(ts in url for ts in TRUSTED_SITES):
             score += 15
-            
+        elif "sds" in url or "msds" in url or "safety-data-sheet" in url:
+            score += 8
+
+        if any(ts in url for ts in TRUSTED_SITES):
+            score += 10
+
+        final_score = max(0, min(100, score))
+
         ranked.append({
             "url": cand["url"],
-            "score": score,
+            "score": final_score,
+            "title": cand.get("title", ""),
             "snippet": cand.get("snippet", "")
         })
-        
+
     return sorted(ranked, key=lambda x: x["score"], reverse=True)
 
 @tool
 def fetch_document_text(url: str) -> str:
     """
-    Fetches the content of a URL. If it's a PDF, extracts the text from the first page.
-    If it's an HTML page, extracts the visible text. 
-    Use this to get evidence from the document to verify product name, manufacturer, country, etc.
+    Safely downloads and extracts structured Safety Data Sheet text from a URL (PDF or HTML).
+    Includes full SSRF protection, redirect verification, stream bounds, and section extraction.
+    Returns structured evidence summary containing product, manufacturer, sections, and CAS numbers.
     """
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=10) as response:
-            content_type = response.headers.get('Content-Type', '')
-            data = response.read()
-            
-            if 'application/pdf' in content_type.lower() or url.lower().endswith('.pdf'):
-                doc = fitz.open(stream=data, filetype="pdf")
-                if len(doc) > 0:
-                    page_text = doc[0].get_text()
-                    return page_text[:800] # return first 800 chars of page 1
-                return "PDF is empty."
-            else:
-                soup = BeautifulSoup(data, 'html.parser')
-                text = soup.get_text(separator=' ', strip=True)
-                return text[:800] # return first 800 chars
+        data, content_type, final_url = safe_fetch_document(url, timeout=10.0)
+        evidence = parse_sds_document(data, content_type, final_url)
+
+        if not evidence.fetched_successfully:
+            return f"Error fetching/parsing document: {evidence.error or 'Unknown parsing error'}"
+
+        summary_lines = [
+            f"--- SDS Document Evidence from: {final_url} ---",
+            f"Is Authentic SDS: {evidence.is_sds}",
+            f"Document Language: {evidence.language}",
+            f"Jurisdiction/Region: {evidence.country}",
+            f"Revision Date: {evidence.revision_date or 'Not specified'}",
+            f"CAS Numbers Found: {', '.join(evidence.cas_numbers) if evidence.cas_numbers else 'None'}",
+            f"Part Numbers Found: {', '.join(evidence.part_numbers) if evidence.part_numbers else 'None'}",
+        ]
+
+        if evidence.sections:
+            summary_lines.append("\nKey Extracted Sections:")
+            for sec_name, sec_text in evidence.sections.items():
+                summary_lines.append(f"[{sec_name}]:\n{sec_text[:400]}")
+        else:
+            summary_lines.append(f"\nDocument Snippet:\n{evidence.raw_snippet[:800]}")
+
+        return "\n".join(summary_lines)
+
+    except SecurityError as sec_err:
+        return f"Security Error: SSRF / network policy violation: {str(sec_err)}"
     except Exception as e:
-        return f"Error fetching document: {e}"
+        return f"Error fetching document: {str(e)}"

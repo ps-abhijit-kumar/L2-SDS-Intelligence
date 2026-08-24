@@ -1,0 +1,445 @@
+{
+  "run_id": "eval_20260824_075836_805b8a",
+  "timestamp": "2026-08-24T08:00:58.600903+00:00",
+  "total_cases": 10,
+  "total_duration_seconds": 142.1,
+  "average_latency_seconds": 13.9,
+  "min_latency_seconds": 4.36,
+  "max_latency_seconds": 26.1,
+  "breakdown": {
+    "exact_matches": 0,
+    "best_available": 0,
+    "needs_review": 10,
+    "errors": 0
+  },
+  "metrics": {
+    "status_accuracy_pct": 0.0,
+    "url_correctness_pct": 0.0,
+    "manufacturer_correctness_pct": 0.0,
+    "product_correctness_pct": 0.0,
+    "overall_field_level_accuracy_pct": 0.0,
+    "resolution_rate_pct": 0.0
+  },
+  "results": [
+    {
+      "id": "GT_001",
+      "product_name": "Acetone",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "179124",
+      "cas_number": "67-64-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 20.47,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T07:58:56.967471+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_002",
+      "product_name": "Isopropyl Alcohol",
+      "manufacturer": "Fisher Scientific",
+      "part_number": "A416-4",
+      "cas_number": "67-63-0",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 15.15,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T07:59:12.432139+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_003",
+      "product_name": "Sulfuric Acid",
+      "manufacturer": "Merck",
+      "part_number": "100731",
+      "cas_number": "7664-93-9",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 4.36,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-24T07:59:17.107290+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_004",
+      "product_name": "Methanol",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A412-4",
+      "cas_number": "67-56-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 4.62,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 4,
+        "verified_at": "2026-08-24T07:59:22.037175+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_005",
+      "product_name": "Toluene",
+      "manufacturer": "Honeywell",
+      "part_number": "34866",
+      "cas_number": "108-88-3",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 26.1,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 2,
+        "verified_at": "2026-08-24T07:59:48.447730+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_006",
+      "product_name": "Benzene",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "270709",
+      "cas_number": "71-43-2",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 23.64,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-24T08:00:12.396277+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_007",
+      "product_name": "Hydrochloric Acid",
+      "manufacturer": "Fisher Scientific",
+      "part_number": "A144-500",
+      "cas_number": "7647-01-0",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 4.88,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T08:00:17.594439+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_008",
+      "product_name": "Ethanol",
+      "manufacturer": "Merck",
+      "part_number": "100983",
+      "cas_number": "64-17-5",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 7.48,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-24T08:00:25.376925+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_009",
+      "product_name": "Nitric Acid",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A200-500",
+      "cas_number": "7697-37-2",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 6.27,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 4,
+        "verified_at": "2026-08-24T08:00:31.947826+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    },
+    {
+      "id": "GT_010",
+      "product_name": "Sodium Hydroxide",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "S5881",
+      "cas_number": "1310-73-2",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Verification complete.",
+      "latency_seconds": 26.04,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-24T08:00:58.295757+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ]
+      }
+    }
+  ]
+}

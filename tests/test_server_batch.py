@@ -38,7 +38,7 @@ def test_sheet_classification():
     # Supporting data sheet
     assert classify_sheet('Allocation', ['Squad', 'Member', 'Count'], 0, 897) == 'SUPPORTING_DATA'
     assert classify_sheet('Data_Dump', ['Ref_ID', 'Val1', 'Val2'], 0, 5336) == 'SUPPORTING_DATA'
-    
+
     # Summary sheet
     assert classify_sheet('Summary_Report', ['Metric', 'Total'], 0, 15) == 'SUMMARY'
     assert classify_sheet('Pivot_Table', ['Category', 'Sum'], 0, 30) == 'SUMMARY'

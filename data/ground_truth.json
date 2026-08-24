@@ -1,0 +1,172 @@
+[
+  {
+    "id": "GT_001",
+    "product_name": "Acetone",
+    "manufacturer": "Sigma-Aldrich",
+    "part_number": "179124",
+    "cas_number": "67-64-1",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Sigma-Aldrich",
+    "expected_product": "Acetone",
+    "acceptable_domains": [
+      "sigmaaldrich.com",
+      "merckmillipore.com"
+    ],
+    "expected_evidence": "Flash point -20 C, CAS 67-64-1, solvent"
+  },
+  {
+    "id": "GT_002",
+    "product_name": "Isopropyl Alcohol",
+    "manufacturer": "Fisher Scientific",
+    "part_number": "A416-4",
+    "cas_number": "67-63-0",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Fisher Scientific",
+    "expected_product": "Isopropyl Alcohol",
+    "acceptable_domains": [
+      "fishersci.com",
+      "thermofisher.com"
+    ],
+    "expected_evidence": "Isopropanol 2-propanol CAS 67-63-0"
+  },
+  {
+    "id": "GT_003",
+    "product_name": "Sulfuric Acid",
+    "manufacturer": "Merck",
+    "part_number": "100731",
+    "cas_number": "7664-93-9",
+    "country": "United Kingdom",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Merck",
+    "expected_product": "Sulfuric Acid",
+    "acceptable_domains": [
+      "merckmillipore.com",
+      "sigmaaldrich.com"
+    ],
+    "expected_evidence": "Corrosive acid CAS 7664-93-9"
+  },
+  {
+    "id": "GT_004",
+    "product_name": "Methanol",
+    "manufacturer": "Thermo Fisher",
+    "part_number": "A412-4",
+    "cas_number": "67-56-1",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Thermo Fisher",
+    "expected_product": "Methanol",
+    "acceptable_domains": [
+      "thermofisher.com",
+      "fishersci.com"
+    ],
+    "expected_evidence": "Methyl alcohol flammable CAS 67-56-1"
+  },
+  {
+    "id": "GT_005",
+    "product_name": "Toluene",
+    "manufacturer": "Honeywell",
+    "part_number": "34866",
+    "cas_number": "108-88-3",
+    "country": "Germany",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Honeywell",
+    "expected_product": "Toluene",
+    "acceptable_domains": [
+      "honeywell.com",
+      "lab-honeywell.com"
+    ],
+    "expected_evidence": "Methylbenzene CAS 108-88-3"
+  },
+  {
+    "id": "GT_006",
+    "product_name": "Benzene",
+    "manufacturer": "Sigma-Aldrich",
+    "part_number": "270709",
+    "cas_number": "71-43-2",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Sigma-Aldrich",
+    "expected_product": "Benzene",
+    "acceptable_domains": [
+      "sigmaaldrich.com",
+      "merckmillipore.com"
+    ],
+    "expected_evidence": "Carcinogen aromatic hydrocarbon CAS 71-43-2"
+  },
+  {
+    "id": "GT_007",
+    "product_name": "Hydrochloric Acid",
+    "manufacturer": "Fisher Scientific",
+    "part_number": "A144-500",
+    "cas_number": "7647-01-0",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Fisher Scientific",
+    "expected_product": "Hydrochloric Acid",
+    "acceptable_domains": [
+      "fishersci.com",
+      "thermofisher.com"
+    ],
+    "expected_evidence": "Hydrogen chloride aqueous CAS 7647-01-0"
+  },
+  {
+    "id": "GT_008",
+    "product_name": "Ethanol",
+    "manufacturer": "Merck",
+    "part_number": "100983",
+    "cas_number": "64-17-5",
+    "country": "France",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Merck",
+    "expected_product": "Ethanol",
+    "acceptable_domains": [
+      "merckmillipore.com",
+      "sigmaaldrich.com"
+    ],
+    "expected_evidence": "Ethyl alcohol CAS 64-17-5"
+  },
+  {
+    "id": "GT_009",
+    "product_name": "Nitric Acid",
+    "manufacturer": "Thermo Fisher",
+    "part_number": "A200-500",
+    "cas_number": "7697-37-2",
+    "country": "Canada",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Thermo Fisher",
+    "expected_product": "Nitric Acid",
+    "acceptable_domains": [
+      "thermofisher.com",
+      "fishersci.com"
+    ],
+    "expected_evidence": "Strong oxidizing acid CAS 7697-37-2"
+  },
+  {
+    "id": "GT_010",
+    "product_name": "Sodium Hydroxide",
+    "manufacturer": "Sigma-Aldrich",
+    "part_number": "S5881",
+    "cas_number": "1310-73-2",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "EXACT MATCH",
+    "expected_manufacturer": "Sigma-Aldrich",
+    "expected_product": "Sodium Hydroxide",
+    "acceptable_domains": [
+      "sigmaaldrich.com",
+      "merckmillipore.com"
+    ],
+    "expected_evidence": "Caustic soda base CAS 1310-73-2"
+  }
+]

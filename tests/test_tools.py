@@ -21,7 +21,7 @@ def test_rank_sds_candidates():
         "target_product": "Acetone",
         "target_company": "Sigma-Aldrich"
     })
-    
+
     assert len(ranked) == 2
     assert ranked[0]["url"] == "http://sigmaaldrich.com/acetone.pdf"
     assert ranked[0]["score"] > ranked[1]["score"]

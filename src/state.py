@@ -1,13 +1,35 @@
-from typing import TypedDict, Annotated
+from typing import TypedDict, Annotated, List, Dict, Any, Optional
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage
 
 class SDSState(TypedDict):
-    messages: Annotated[list[AnyMessage], add_messages]
-    # We can pass row_data as a separate dict to give the agent context easily
-    row_data: dict
-    # Final outputs will be extracted from the last message or structured output
+    # LangGraph conversational / ReAct message stream
+    messages: Annotated[List[AnyMessage], add_messages]
+
+    # Request Input Context
+    row_data: Dict[str, Any]
+
+    # Provenance and Discovery State (Priority 4)
+    discovered_candidates: List[Dict[str, Any]]
+    ranked_candidates: List[Dict[str, Any]]
+    fetched_urls: List[str]
+    successful_fetches: Dict[str, Dict[str, Any]]
+    failed_fetches: Dict[str, str]
+    current_candidate_url: str
+
+    # Dynamic Action State (Priority 3)
+    action_history: List[Dict[str, Any]]
+    next_action: Optional[str]
+    iteration_count: int
+    retry_count: int
+
+    # Reflection & Independent Verification State (Priority 1)
+    draft_decision: Optional[Dict[str, Any]]
+    verification_result: Optional[Dict[str, Any]]
+
+    # Strict Structured Final Verdict (Priority 2)
     final_status: str
     final_url: str
     confidence: int
     detailed_reasoning: str
+    provenance: Optional[Dict[str, Any]]

@@ -1,0 +1,425 @@
+{
+  "run_id": "eval_20260824_081349_299c37",
+  "timestamp": "2026-08-24T08:16:03.164647+00:00",
+  "total_cases": 10,
+  "total_duration_seconds": 133.4,
+  "average_latency_seconds": 13.03,
+  "min_latency_seconds": 3.39,
+  "max_latency_seconds": 29.24,
+  "breakdown": {
+    "exact_matches": 2,
+    "best_available": 4,
+    "needs_review": 4,
+    "errors": 0
+  },
+  "metrics": {
+    "status_accuracy_pct": 60.0,
+    "url_correctness_pct": 60.0,
+    "manufacturer_correctness_pct": 60.0,
+    "product_correctness_pct": 60.0,
+    "overall_field_level_accuracy_pct": 60.0,
+    "resolution_rate_pct": 60.0
+  },
+  "results": [
+    {
+      "id": "GT_001",
+      "product_name": "Acetone",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "179124",
+      "cas_number": "67-64-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://hazcoms.com/pdfs/Sigma-Aldrich/acetone-sds.pdf",
+      "confidence": 70,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Acetone'. Note: Candidate provides chemical specification but manufacturer 'Sigma-Aldrich' could not be definitively confirmed.",
+      "latency_seconds": 26.89,
+      "status_correct": true,
+      "url_correct": true,
+      "manufacturer_correct": true,
+      "product_correct": true,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "https://hazcoms.com/pdfs/Sigma-Aldrich/acetone-sds.pdf",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-24T08:14:16.657253+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_002",
+      "product_name": "Isopropyl Alcohol",
+      "manufacturer": "Fisher Scientific",
+      "part_number": "A416-4",
+      "cas_number": "67-63-0",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ALFAA41463~~PDF~~MTR~~AGHS~~CE~~2020-02-16+09:34:48~~2-Propanol~~",
+      "confidence": 70,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Isopropyl Alcohol'. Note: Candidate provides chemical specification but manufacturer 'Fisher Scientific' could not be definitively confirmed.",
+      "latency_seconds": 6.51,
+      "status_correct": true,
+      "url_correct": true,
+      "manufacturer_correct": true,
+      "product_correct": true,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ALFAA41463~~PDF~~MTR~~AGHS~~CE~~2020-02-16+09:34:48~~2-Propanol~~",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T08:14:23.474563+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_003",
+      "product_name": "Sulfuric Acid",
+      "manufacturer": "Merck",
+      "part_number": "100731",
+      "cas_number": "7664-93-9",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 3.66,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": true,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-24T08:14:27.443065+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_004",
+      "product_name": "Methanol",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A412-4",
+      "cas_number": "67-56-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "EXACT MATCH",
+      "predicted_url": "https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+      "confidence": 85,
+      "reasoning": "Verified EXACT MATCH for 'Methanol' from Thermo Fisher. Document validated with authentic GHS safety sections.",
+      "latency_seconds": 4.43,
+      "status_correct": true,
+      "url_correct": true,
+      "manufacturer_correct": true,
+      "product_correct": true,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T08:14:32.188052+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_005",
+      "product_name": "Toluene",
+      "manufacturer": "Honeywell",
+      "part_number": "34866",
+      "cas_number": "108-88-3",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "EXACT MATCH",
+      "predicted_url": "https://sdsinventory.com/sds-cra-search/toluene-655085",
+      "confidence": 85,
+      "reasoning": "Verified EXACT MATCH for 'Toluene' from Honeywell. Part number 34866 confirmed. Document validated with authentic GHS safety sections.",
+      "latency_seconds": 13.03,
+      "status_correct": true,
+      "url_correct": true,
+      "manufacturer_correct": true,
+      "product_correct": true,
+      "verification_approved": true,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "https://sdsinventory.com/sds-cra-search/toluene-655085",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T08:14:45.517715+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_006",
+      "product_name": "Benzene",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "270709",
+      "cas_number": "71-43-2",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 28.06,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": true,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-24T08:15:13.877009+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_007",
+      "product_name": "Hydrochloric Acid",
+      "manufacturer": "Fisher Scientific",
+      "part_number": "A144-500",
+      "cas_number": "7647-01-0",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 50,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 7.96,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": true,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T08:15:22.144124+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_008",
+      "product_name": "Ethanol",
+      "manufacturer": "Merck",
+      "part_number": "100983",
+      "cas_number": "64-17-5",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 3.39,
+      "status_correct": false,
+      "url_correct": false,
+      "manufacturer_correct": false,
+      "product_correct": false,
+      "verification_approved": true,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-24T08:15:25.831586+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_009",
+      "product_name": "Nitric Acid",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A200-500",
+      "cas_number": "7697-37-2",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://www.fishersci.com/store/msds?partNumber=A200500&productDescription=NITRIC+ACID+REAGENT+ACS+500ML&vendorId=VN00033897&countryCode=US&language=en",
+      "confidence": 70,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Nitric Acid'. Note: Candidate provides chemical specification but manufacturer 'Thermo Fisher' could not be definitively confirmed.",
+      "latency_seconds": 7.17,
+      "status_correct": true,
+      "url_correct": true,
+      "manufacturer_correct": true,
+      "product_correct": true,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "https://www.fishersci.com/store/msds?partNumber=A200500&productDescription=NITRIC+ACID+REAGENT+ACS+500ML&vendorId=VN00033897&countryCode=US&language=en",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 3,
+        "verified_at": "2026-08-24T08:15:33.304748+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    },
+    {
+      "id": "GT_010",
+      "product_name": "Sodium Hydroxide",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "S5881",
+      "cas_number": "1310-73-2",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://beta.lakeland.edu/AboutUs/MSDS/PDFs/2608/s5881.pdf",
+      "confidence": 70,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Sodium Hydroxide'. Note: Candidate provides chemical specification but manufacturer 'Sigma-Aldrich' could not be definitively confirmed.",
+      "latency_seconds": 29.24,
+      "status_correct": true,
+      "url_correct": true,
+      "manufacturer_correct": true,
+      "product_correct": true,
+      "verification_approved": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "DRAFT"
+      ],
+      "provenance": {
+        "selected_url": "https://beta.lakeland.edu/AboutUs/MSDS/PDFs/2608/s5881.pdf",
+        "discovered_candidates_count": 5,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-24T08:16:02.859366+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "DRAFT"
+        ]
+      }
+    }
+  ]
+}

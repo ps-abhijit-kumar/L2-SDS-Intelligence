@@ -8,13 +8,15 @@ from mcp.client.stdio import stdio_client
 
 class SDSMCPClient:
     def __init__(self, excel_file_path: Optional[str] = None):
-        server_script = os.path.join(os.path.dirname(__file__), "mcp_server.py")
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        server_script = os.path.join(project_root, "src", "mcp_server.py")
         env_vars = dict(os.environ)
+        env_vars["PYTHONPATH"] = project_root
         if excel_file_path:
             env_vars["EXCEL_FILE_PATH"] = excel_file_path
 
         self.server_parameters = StdioServerParameters(
-            command=sys.executable, 
+            command=sys.executable,
             args=[server_script],
             env=env_vars
         )
@@ -31,7 +33,7 @@ class SDSMCPClient:
     async def disconnect(self):
         if self._exit_stack:
             await self._exit_stack.aclose()
-            
+
     async def get_pending_requests(
         self,
         column_mapping: Optional[Dict[str, str]] = None,
@@ -39,7 +41,7 @@ class SDSMCPClient:
     ):
         if not self._session:
             raise RuntimeError("Not connected to MCP server")
-        
+
         args = {}
         if column_mapping:
             args["column_mapping_json"] = json.dumps(column_mapping)
