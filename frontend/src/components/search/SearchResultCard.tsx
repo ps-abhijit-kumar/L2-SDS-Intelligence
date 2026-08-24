@@ -97,13 +97,26 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-cyan-400" />
-              Verified Safety Data Sheet Source
+              {result.url_type === 'landing_page' || (!result.final_url.toLowerCase().split('?')[0].endsWith('.pdf') && result.url_type !== 'pdf')
+                ? 'SDS Landing / Download Page (Manual Download Available)'
+                : 'Direct Verified SDS PDF Document'}
             </span>
-            {domain && (
-              <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-500/40">
-                {domain}
+            <div className="flex items-center gap-2">
+              <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                result.url_type === 'landing_page' || (!result.final_url.toLowerCase().split('?')[0].endsWith('.pdf') && result.url_type !== 'pdf')
+                  ? 'text-amber-300 bg-amber-950/80 border-amber-500/40'
+                  : 'text-emerald-300 bg-emerald-950/80 border-emerald-500/40'
+              }`}>
+                {result.url_type === 'landing_page' || (!result.final_url.toLowerCase().split('?')[0].endsWith('.pdf') && result.url_type !== 'pdf')
+                  ? 'LANDING PAGE'
+                  : 'PDF DOCUMENT'}
               </span>
-            )}
+              {domain && (
+                <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-500/40">
+                  {domain}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3 bg-[#0B1020] px-3.5 py-2.5 rounded-lg border border-white/[0.08]">

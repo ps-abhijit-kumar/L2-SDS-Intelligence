@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Layers, RefreshCw, Download } from 'lucide-react';
 import { BatchUploadCard } from '../components/batch/BatchUploadCard';
-import { BatchWorkbookAnalysisCard } from '../components/batch/BatchWorkbookAnalysisCard';
 import { BatchProgressMonitor } from '../components/batch/BatchProgressMonitor';
 import { BatchRequestTable } from '../components/batch/BatchRequestTable';
 import { BatchDetailModal } from '../components/batch/BatchDetailModal';
@@ -12,11 +11,9 @@ import {
   useBatchStatus,
   useStartBatch,
   useUploadBatch,
-  useConfirmMapping,
-  useSelectDefaultBatch,
   useResetBatch,
 } from '../hooks/useBatch';
-import { BatchRow, ColumnMapping } from '../types/sds';
+import { BatchRow } from '../types/sds';
 import { api } from '../services/api';
 
 export const BatchProcessingPage: React.FC = () => {
@@ -26,17 +23,11 @@ export const BatchProcessingPage: React.FC = () => {
   const { data: batchStatus } = useBatchStatus();
 
   const { mutate: uploadFile, isPending: isUploading, error: uploadError } = useUploadBatch();
-  const { mutate: confirmMapping, isPending: isConfirming, error: mappingError } = useConfirmMapping();
-  const { mutate: selectDefault, isPending: isSelectingDefault } = useSelectDefaultBatch();
   const { mutate: startBatch, isPending: isStarting, error: startError } = useStartBatch();
   const { mutate: resetBatch, isPending: isResetting, error: resetError } = useResetBatch();
 
   const handleUpload = (file: File) => {
     uploadFile(file);
-  };
-
-  const handleConfirmMapping = (mapping: ColumnMapping) => {
-    confirmMapping(mapping);
   };
 
   const handleStart = () => {
@@ -57,14 +48,14 @@ export const BatchProcessingPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <Layers className="w-5 h-5 text-cyan-400" />
             <h2 className="text-xl font-black text-slate-100">
-              SDS Batch Processing Command Console
+              SDS Batch Processing
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              Multi-Sheet Engine
+              Sequential Agent
             </span>
           </div>
           <p className="text-xs text-slate-400 max-w-3xl leading-relaxed font-sans">
-            Enterprise chemical compliance pipeline supporting arbitrary multi-sheet Excel workbooks, dynamic semantic column mapping, LangGraph ReAct verification cycles, and in-place FastMCP Excel updates.
+            Upload an Excel workbook to extract and sequentially verify SDS documents using autonomous search and verification.
           </p>
         </div>
 
@@ -98,13 +89,6 @@ export const BatchProcessingPage: React.FC = () => {
         />
       )}
 
-      {mappingError && (
-        <ErrorMessage
-          title="Column Mapping Failed"
-          message={mappingError.message || 'Error applying custom column mapping.'}
-        />
-      )}
-
       {startError && (
         <ErrorMessage
           title="Batch Execution Failed to Start"
@@ -132,22 +116,12 @@ export const BatchProcessingPage: React.FC = () => {
         preview={preview}
         batchStatus={batchStatus}
         onUploadFile={handleUpload}
-        onSelectDefault={() => selectDefault()}
         onStartBatch={handleStart}
         onResetBatch={handleReset}
         isUploading={isUploading}
         isStarting={isStarting}
         isResetting={isResetting}
       />
-
-      {/* Workbook Ingestion Analysis & Semantic Column Mapping */}
-      {preview && (
-        <BatchWorkbookAnalysisCard
-          preview={preview}
-          onConfirmMapping={handleConfirmMapping}
-          isConfirming={isConfirming}
-        />
-      )}
 
       {/* Live Batch Execution Progress Monitor */}
       <BatchProgressMonitor status={batchStatus} />

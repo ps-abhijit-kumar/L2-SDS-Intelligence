@@ -30,6 +30,7 @@ class SDSState(TypedDict):
     # Strict Structured Final Verdict (Priority 2)
     final_status: str
     final_url: str
+    url_type: Optional[str]
     confidence: int
     detailed_reasoning: str
     provenance: Optional[Dict[str, Any]]

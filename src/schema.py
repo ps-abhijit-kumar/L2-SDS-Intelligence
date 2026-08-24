@@ -26,6 +26,29 @@ def is_valid_http_url(url: str) -> bool:
     except Exception:
         return False
 
+class NormalizedSDSRequest(BaseModel):
+    """Normalized four-field chemical Safety Data Sheet request extracted semantically from Excel."""
+    s_no: int = Field(default=1, description="Sequential request index.")
+    product_name: str = Field(..., description="Chemical substance or product trade name.")
+    manufacturer: str = Field(..., description="Chemical manufacturer, supplier, or product company.")
+    language: str = Field(..., description="Requested SDS document language.")
+    country: str = Field(..., description="Target jurisdiction or destination country.")
+    part_number: Optional[str] = Field(default="", description="Optional part number, catalog code, or CAS number.")
+    status: str = Field(default="PENDING", description="Verification verdict status.")
+    confidence: int = Field(default=0, ge=0, le=100, description="Verification confidence integer (0-100).")
+    found_url: str = Field(default="", description="Grounded SDS document URL or landing page.")
+    url_type: Optional[Literal["pdf", "landing_page"]] = Field(default="pdf", description="Type of retrieved URL.")
+    detailed_reasoning: str = Field(default="", description="Evaluation reasoning.")
+    source_sheet: Optional[str] = Field(default=None, description="Origin worksheet in source workbook.")
+    source_row: Optional[int] = Field(default=None, description="Origin physical row number in worksheet.")
+
+    @field_validator("product_name", "manufacturer", "language", "country")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Required SDS search identity field must not be empty.")
+        return v.strip()
+
 class SDSEvidence(BaseModel):
     """Structured extraction of evidence from a fetched SDS candidate."""
     url: str
@@ -39,6 +62,7 @@ class SDSEvidence(BaseModel):
     country: str = ""
     is_sds: bool = False
     sections: Dict[str, str] = Field(default_factory=dict)
+    url_type: Literal["pdf", "landing_page"] = "pdf"
     raw_snippet: str = ""
     error: Optional[str] = None
     fetched_successfully: bool = True
@@ -88,6 +112,10 @@ class VerificationResult(BaseModel):
     final_url: str = Field(
         default="",
         description="Verified grounded URL, or empty string if no valid candidate exists."
+    )
+    url_type: Optional[Literal["pdf", "landing_page"]] = Field(
+        default="pdf",
+        description="Whether the validated URL is a direct PDF or an SDS landing/download page."
     )
     confidence: int = Field(
         ...,
@@ -159,6 +187,10 @@ class SDSValidationResult(BaseModel):
     final_url: str = Field(
         default="",
         description="The final URL of the validated document. Must be empty string if status is 'NEEDS REVIEW' or no candidate found."
+    )
+    url_type: Optional[Literal["pdf", "landing_page"]] = Field(
+        default="pdf",
+        description="Whether the final URL points directly to an SDS PDF or an SDS landing/download page."
     )
     provenance: Optional[Dict[str, Any]] = Field(
         default=None,

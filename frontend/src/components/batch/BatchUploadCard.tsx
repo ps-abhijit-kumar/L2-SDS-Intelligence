@@ -9,7 +9,7 @@ interface BatchUploadCardProps {
   preview?: BatchPreviewResponse;
   batchStatus?: BatchStatusResponse;
   onUploadFile: (file: File) => void;
-  onSelectDefault: () => void;
+  onSelectDefault?: () => void;
   onStartBatch: () => void;
   onResetBatch: () => void;
   isUploading?: boolean;
@@ -21,7 +21,6 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
   preview,
   batchStatus,
   onUploadFile,
-  onSelectDefault,
   onStartBatch,
   onResetBatch,
   isUploading = false,
@@ -106,14 +105,14 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
           </div>
 
           <h4 className="text-sm font-bold text-slate-100 mb-1">
-            {isUploading ? 'Analyzing Workbook & Classifying Sheets...' : 'Upload Real-World SDS Workbook'}
+            {isUploading ? 'Extracting SDS Requests...' : 'Upload SDS Workbook'}
           </h4>
           <p className="text-xs text-slate-400 max-w-sm mb-3">
-            Drag & drop an Excel (<code className="text-cyan-300 font-mono">.xlsx</code>) workbook. All worksheets will be analyzed for chemical request data.
+            Drag & drop an Excel (<code className="text-cyan-300 font-mono">.xlsx</code>) workbook to automatically extract and verify SDS chemical requests.
           </p>
 
           <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/80 px-2.5 py-1 rounded-full border border-cyan-500/30">
-            Supports Multi-Sheet & Real-World Workbooks
+            Excel (.xlsx) Ingestion
           </span>
         </div>
 
@@ -122,30 +121,29 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-                Active Batch Target
+                Active Workbook
               </span>
-              {!isDefaultFile && (
-                <button
-                  type="button"
-                  onClick={onSelectDefault}
-                  className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <FileSpreadsheet className="w-3 h-3" />
-                  <span>Use Sample Benchmark</span>
-                </button>
-              )}
+              <span className="text-[10px] font-mono text-slate-400">
+                {preview?.file_name ? 'Active Session' : 'No Workbook Active'}
+              </span>
             </div>
 
             <div className="p-3 bg-[#0B1020] rounded-xl border border-white/[0.08] flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                preview?.file_name
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                  : 'bg-slate-800/40 border border-slate-700/40 text-slate-500'
+              }`}>
                 <FileSpreadsheet className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-100 truncate">
-                  {preview?.file_name || 'sample_requests_eval.xlsx'}
+                  {preview?.file_name || 'No workbook loaded'}
                 </p>
                 <p className="text-[10px] font-mono text-slate-400">
-                  {sdsSheetsCount} Request {sdsSheetsCount === 1 ? 'Sheet' : 'Sheets'} ({totalWorkbookSheets} Total in Workbook)
+                  {preview?.file_name
+                    ? `${validRequests} SDS Requests Detected`
+                    : 'Upload an Excel (.xlsx) workbook above'}
                 </p>
               </div>
             </div>
@@ -153,16 +151,16 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
             {/* Accurate Metrics Display */}
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-2 bg-[#0B1020] rounded-lg border border-white/[0.06]">
-                <span className="text-[9px] font-mono uppercase text-slate-500 block">Valid Requests</span>
-                <span className="text-sm font-mono font-bold text-slate-200">{validRequests}</span>
+                <span className="text-[9px] font-mono uppercase text-slate-500 block">SDS Requests</span>
+                <span className="text-sm font-mono font-bold text-slate-200">{preview?.file_name ? validRequests : 0}</span>
               </div>
               <div className="p-2 bg-[#0B1020] rounded-lg border border-white/[0.06]">
                 <span className="text-[9px] font-mono uppercase text-cyan-500 block">Pending</span>
-                <span className="text-sm font-mono font-bold text-cyan-400">{pendingRequests}</span>
+                <span className="text-sm font-mono font-bold text-cyan-400">{preview?.file_name ? pendingRequests : 0}</span>
               </div>
               <div className="p-2 bg-[#0B1020] rounded-lg border border-white/[0.06]">
                 <span className="text-[9px] font-mono uppercase text-emerald-500 block">Resolved</span>
-                <span className="text-sm font-mono font-bold text-emerald-400">{completedRequests}</span>
+                <span className="text-sm font-mono font-bold text-emerald-400">{preview?.file_name ? completedRequests : 0}</span>
               </div>
             </div>
           </div>
@@ -174,12 +172,14 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
               size="md"
               onClick={onStartBatch}
               isLoading={isStarting || isRunning}
-              disabled={isRunning || validRequests === 0 || pendingRequests === 0}
+              disabled={!preview?.file_name || isRunning || validRequests === 0 || pendingRequests === 0}
               leftIcon={<Play className="w-4 h-4 fill-current" />}
               className="w-full shadow-glow-cyan"
             >
               {isRunning
                 ? 'Processing Batch...'
+                : !preview?.file_name
+                ? 'Upload Workbook to Begin'
                 : pendingRequests === 0
                 ? 'All Requests Completed'
                 : `Start Batch Processing (${pendingRequests} Pending)`}
@@ -191,27 +191,39 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
                 size="sm"
                 onClick={onResetBatch}
                 isLoading={isResetting}
-                disabled={isRunning}
+                disabled={!preview?.file_name || isRunning}
                 leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
                 className="flex-1"
               >
                 Reset Workbook
               </Button>
 
-              <a
-                href={api.getBatchExportUrl()}
-                download
-                className="flex-1"
-              >
+              {preview?.file_name ? (
+                <a
+                  href={api.getBatchExportUrl()}
+                  download
+                  className="flex-1"
+                >
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Download className="w-3.5 h-3.5 text-cyan-400" />}
+                    className="w-full"
+                  >
+                    Download Excel
+                  </Button>
+                </a>
+              ) : (
                 <Button
                   variant="secondary"
                   size="sm"
-                  leftIcon={<Download className="w-3.5 h-3.5 text-cyan-400" />}
-                  className="w-full"
+                  disabled
+                  leftIcon={<Download className="w-3.5 h-3.5 text-slate-500" />}
+                  className="flex-1 opacity-50"
                 >
                   Download Excel
                 </Button>
-              </a>
+              )}
             </div>
           </div>
         </div>

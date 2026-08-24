@@ -57,9 +57,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 class BatchJobManager:
     """Manages request-scoped, isolated batch execution state with thread-safe locks."""
-    def __init__(self, default_file: str = DEFAULT_EXCEL_FILE):
-        self.default_file = default_file
-        self.active_excel_file = default_file
+    def __init__(self):
+        self.active_excel_file: Optional[str] = None
         self.active_column_mapping: Dict[str, Optional[str]] = {}
         self.active_selected_sheets: Optional[List[str]] = None
         self._lock = asyncio.Lock()
@@ -72,15 +71,15 @@ class BatchJobManager:
         self.jobs[job_id] = {
             'batch_id': None,
             'status': 'idle',
-            'file_name': os.path.basename(self.active_excel_file),
-            'file_path': self.active_excel_file,
+            'file_name': None,
+            'file_path': None,
             'total_requests': 0,
             'completed_requests': 0,
             'current_index': 0,
             'current_sheet': '',
             'current_product': '',
             'current_company': '',
-            'current_stage': 'Idle',
+            'current_stage': 'No active workbook. Upload an Excel workbook to begin.',
             'started_at': None,
             'completed_at': None,
             'error': None,
@@ -145,6 +144,7 @@ class SDSSearchResponse(BaseModel):
     status: str
     confidence: int
     final_url: str
+    url_type: Optional[str] = "pdf"
     detailed_reasoning: str
     timestamp: str
     trace: List[Dict[str, Any]] = []
@@ -181,6 +181,11 @@ def normalize_trace_item(item: Dict[str, Any], idx: int) -> Dict[str, Any]:
     if not timestamp:
         timestamp = datetime.now(timezone.utc).isoformat()
 
+    url_val = str(item.get('final_url', ''))
+    url_type_val = item.get('url_type') or (item.get('provenance', {}).get('url_type') if isinstance(item.get('provenance'), dict) else None)
+    if not url_type_val and url_val:
+        url_type_val = 'pdf' if url_val.lower().split('?')[0].endswith('.pdf') else 'landing_page'
+
     return {
         'id': str(item_id),
         'sheet_name': item.get('sheet_name') or req.get('_sheet_name') or '',
@@ -192,7 +197,8 @@ def normalize_trace_item(item: Dict[str, Any], idx: int) -> Dict[str, Any]:
         'language': str(req.get('Language') or ''),
         'status': str(item.get('final_status', 'ERROR')),
         'confidence': int(item.get('confidence', 0) if item.get('confidence') is not None else 0),
-        'final_url': str(item.get('final_url', '')),
+        'final_url': url_val,
+        'url_type': url_type_val,
         'detailed_reasoning': str(item.get('detailed_reasoning', '')),
         'timestamp': timestamp,
         'messages': item.get('messages', [])
@@ -208,7 +214,8 @@ async def get_health():
     groq_configured = bool(groq_key and groq_key.strip() != 'your_groq_api_key_here')
     groq_model = os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')
     mcp_available = os.path.exists(os.path.join('src', 'mcp_server.py'))
-    excel_available = os.path.exists(job_manager.active_excel_file)
+    active_file = job_manager.active_excel_file
+    excel_available = bool(active_file and os.path.exists(active_file))
     current_state = job_manager.get_current_state()
 
     return HealthResponse(
@@ -218,7 +225,7 @@ async def get_health():
         groq_model=groq_model,
         mcp_server_available=mcp_available,
         excel_file_available=excel_available,
-        active_file=os.path.basename(job_manager.active_excel_file),
+        active_file=os.path.basename(active_file) if active_file else 'None',
         batch_status=current_state['status'],
         timestamp=datetime.now(timezone.utc).isoformat()
     )
@@ -230,6 +237,33 @@ async def get_health():
 @app.get('/api/batch/preview')
 async def get_batch_preview(file_path: Optional[str] = None):
     target = file_path or job_manager.active_excel_file
+    if not target or not os.path.exists(target):
+        return {
+            'file_name': None,
+            'file_path': None,
+            'workbook_sheets_count': 0,
+            'workbook_physical_rows': 0,
+            'sds_sheets_count': 0,
+            'sds_requests_count': 0,
+            'pending_requests_count': 0,
+            'completed_requests_count': 0,
+            'exact_matches_count': 0,
+            'best_available_count': 0,
+            'needs_review_count': 0,
+            'errors_count': 0,
+            'selected_sheets': [],
+            'sheets_summary': [],
+            'column_mapping': {},
+            'all_columns': [],
+            'rows': [],
+            'total_rows': 0,
+            'pending_rows': 0,
+            'completed_rows': 0,
+            'total_sheets': 0,
+            'eligible_sheets': 0,
+            'skipped_sheets': 0,
+            'sheet_names': []
+        }
     return inspect_workbook(
         target,
         custom_mapping=job_manager.active_column_mapping,
@@ -676,6 +710,7 @@ async def search_sds(request: SDSSearchRequest):
             status=status,
             confidence=confidence,
             final_url=url,
+            url_type=final_state.get('url_type') or ('pdf' if url.lower().split('?')[0].endswith('.pdf') else 'landing_page'),
             detailed_reasoning=reasoning,
             timestamp=timestamp,
             trace=serialized_messages

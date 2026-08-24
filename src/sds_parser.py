@@ -165,10 +165,11 @@ def parse_sds_document(
     elif "whmis" in norm_full or "canada" in norm_full:
         country = "Canada"
 
-    raw_snippet = full_text[:2500]
+    url_type = "pdf" if is_pdf else "landing_page"
 
     return SDSEvidence(
         url=url,
+        url_type=url_type,
         part_numbers=part_matches[:10],
         cas_numbers=cas_matches[:10],
         revision_date=revision_date,

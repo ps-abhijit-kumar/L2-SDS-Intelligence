@@ -59,31 +59,15 @@ export const BatchRequestTable: React.FC<BatchRequestTableProps> = ({
           </div>
           <div>
             <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wide font-mono">
-              Workbook Requests Preview ({rows.length} Total Rows Across {uniqueSheets.length || 1} Sheets)
+              SDS Requests ({rows.length} Total Records)
             </h3>
             <span className="text-[10px] text-slate-400">
-              Normalized requests mapped from workbook worksheets
+              Active chemical requests extracted from uploaded workbook
             </span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Sheet Filter (if multi-sheet) */}
-          {uniqueSheets.length > 1 && (
-            <select
-              value={sheetFilter}
-              onChange={(e) => setSheetFilter(e.target.value)}
-              className="bg-[#070A12] border border-white/[0.08] text-slate-200 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer"
-            >
-              <option value="ALL">All Sheets ({uniqueSheets.length})</option>
-              {uniqueSheets.map((s, idx) => (
-                <option key={idx} value={s}>
-                  Sheet: {s}
-                </option>
-              ))}
-            </select>
-          )}
-
           {/* Text filter */}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
@@ -91,7 +75,7 @@ export const BatchRequestTable: React.FC<BatchRequestTableProps> = ({
               type="text"
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Filter product/company/part..."
+              placeholder="Filter product/company..."
               className="bg-[#070A12] border border-white/[0.08] text-slate-200 placeholder:text-slate-500 rounded-lg text-xs pl-8 pr-3 py-1.5 focus:outline-none focus:border-cyan-400"
             />
           </div>
@@ -117,8 +101,8 @@ export const BatchRequestTable: React.FC<BatchRequestTableProps> = ({
         <div className="p-8">
           <EmptyState
             icon="inbox"
-            title="No Matching Request Rows"
-            description="No Excel rows match the current search, status, or worksheet filter."
+            title={rows.length === 0 ? "No Active Workbook Loaded" : "No Matching Request Rows"}
+            description={rows.length === 0 ? "Upload an Excel (.xlsx) workbook above to extract and inspect SDS requests." : "No Excel rows match the current search or status filter."}
           />
         </div>
       ) : (
@@ -127,21 +111,20 @@ export const BatchRequestTable: React.FC<BatchRequestTableProps> = ({
             <thead>
               <tr className="bg-[#070A12] border-b border-white/[0.06] text-slate-400 uppercase font-mono font-semibold text-[10px] tracking-wider">
                 <th className="py-2.5 px-3.5 w-10 text-center">#</th>
-                {uniqueSheets.length > 1 && <th className="py-2.5 px-3.5">Sheet</th>}
-                <th className="py-2.5 px-3.5">Product / Chemical</th>
+                <th className="py-2.5 px-3.5">Product Name</th>
                 <th className="py-2.5 px-3.5">Manufacturer</th>
-                <th className="py-2.5 px-3.5">Part No / ID</th>
-                <th className="py-2.5 px-3.5">Jurisdiction</th>
                 <th className="py-2.5 px-3.5">Language</th>
+                <th className="py-2.5 px-3.5">Jurisdiction</th>
                 <th className="py-2.5 px-3.5">Status</th>
                 <th className="py-2.5 px-3.5">Confidence</th>
-                <th className="py-2.5 px-3.5">Found URL</th>
-                <th className="py-2.5 px-3.5 text-right">Inspect</th>
+                <th className="py-2.5 px-3.5">SDS Document URL</th>
+                <th className="py-2.5 px-3.5 text-right">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
               {filteredRows.map((r) => {
                 const isResolved = r.Status && r.Status !== 'PENDING';
+                const isPdf = r['Found URL']?.toLowerCase().split('?')[0].endsWith('.pdf');
                 return (
                   <tr
                     key={`${r._sheet_name || 'sheet'}_${r._row_index}`}
@@ -152,30 +135,27 @@ export const BatchRequestTable: React.FC<BatchRequestTableProps> = ({
                       {r['S.No.']}
                     </td>
 
-                    {uniqueSheets.length > 1 && (
-                      <td className="py-3 px-3.5 font-mono text-cyan-400 text-[11px] font-semibold">
-                        {r._sheet_name || 'Sheet1'}
-                      </td>
-                    )}
-
-                    <td className="py-3 px-3.5 font-bold text-slate-100 max-w-[160px] truncate">
-                      {r.Product || r['Product Name']}
+                    <td className="py-3 px-3.5 font-bold text-slate-100 max-w-[180px] truncate">
+                      <div>
+                        <span className="block truncate">{r.Product || r['Product Name']}</span>
+                        {r['Part Number'] && (
+                          <span className="text-[10px] text-slate-500 font-mono font-normal block truncate">
+                            ID: {r['Part Number']}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
-                    <td className="py-3 px-3.5 text-slate-300 max-w-[140px] truncate font-sans">
+                    <td className="py-3 px-3.5 text-slate-300 max-w-[150px] truncate font-sans">
                       {r['Product Company Name'] || '—'}
-                    </td>
-
-                    <td className="py-3 px-3.5 text-slate-400 font-mono text-[11px] max-w-[100px] truncate">
-                      {r['Part Number'] || '—'}
-                    </td>
-
-                    <td className="py-3 px-3.5 text-slate-400 font-mono text-[11px]">
-                      {r.Country || 'Global'}
                     </td>
 
                     <td className="py-3 px-3.5 text-slate-400 font-mono text-[11px]">
                       {r.Language || 'English'}
+                    </td>
+
+                    <td className="py-3 px-3.5 text-slate-400 font-mono text-[11px]">
+                      {r.Country || 'Global'}
                     </td>
 
                     <td className="py-3 px-3.5">
@@ -192,16 +172,25 @@ export const BatchRequestTable: React.FC<BatchRequestTableProps> = ({
 
                     <td className="py-3 px-3.5">
                       {r['Found URL'] ? (
-                        <a
-                          href={r['Found URL']}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline max-w-[130px] truncate font-mono text-[11px]"
-                        >
-                          <ExternalLink className="w-3 h-3 shrink-0" />
-                          <span className="truncate">{r['Found URL']}</span>
-                        </a>
+                        <div className="flex items-center gap-1.5 max-w-[200px]">
+                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${
+                            isPdf
+                              ? 'text-emerald-300 bg-emerald-950/80 border-emerald-500/40'
+                              : 'text-amber-300 bg-amber-950/80 border-amber-500/40'
+                          }`}>
+                            {isPdf ? 'PDF' : 'PAGE'}
+                          </span>
+                          <a
+                            href={r['Found URL']}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline truncate font-mono text-[11px]"
+                          >
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{r['Found URL']}</span>
+                          </a>
+                        </div>
                       ) : (
                         <span className="text-slate-600 italic text-[11px]">
                           {r.Status === 'PENDING' ? 'Pending run' : 'No URL found'}

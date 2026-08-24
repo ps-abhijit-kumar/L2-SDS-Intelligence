@@ -180,6 +180,17 @@ def perform_verification(
     if "confidence" in corrections:
         confidence = corrections["confidence"]
 
+    # Check if candidate is direct PDF vs landing page
+    is_pdf = clean_draft_url.lower().split('?')[0].endswith('.pdf') or (fetched_evidence_dict and isinstance(fetched_evidence_dict, dict) and fetched_evidence_dict.get("url_type") == "pdf")
+    url_type = "pdf" if is_pdf else "landing_page"
+
+    if not is_pdf and clean_draft_url:
+        # Landing page rule (Requirement 4 & 5): A landing page itself must NOT be treated as equivalent to retrieving the SDS PDF
+        if final_status == "EXACT MATCH":
+            final_status = "BEST AVAILABLE"
+            confidence = min(70, confidence)
+            issues.append("Document is an SDS Landing/Download Page rather than direct PDF. Direct PDF requires manual download.")
+
     if final_status == "EXACT MATCH":
         if not product_match or not manufacturer_match:
             if product_match and not manufacturer_match:
@@ -204,9 +215,12 @@ def perform_verification(
         reasoning_parts.append(f"Verified EXACT MATCH for '{req_product}' from {req_company or 'manufacturer'}.")
         if part_number_match:
             reasoning_parts.append(f"Part number {req_part_number} confirmed.")
-        reasoning_parts.append("Document validated with authentic GHS safety sections.")
+        reasoning_parts.append("Direct SDS PDF document validated with authentic GHS safety sections.")
     elif final_status == "BEST AVAILABLE":
-        reasoning_parts.append(f"BEST AVAILABLE SDS retrieved for '{req_product}'.")
+        if url_type == "landing_page":
+            reasoning_parts.append(f"Legitimate SDS landing/download page retrieved for '{req_product}'. Direct PDF can be downloaded from manufacturer portal.")
+        else:
+            reasoning_parts.append(f"BEST AVAILABLE SDS retrieved for '{req_product}'.")
         if not manufacturer_match and req_company:
             reasoning_parts.append(f"Note: Candidate provides chemical specification but manufacturer '{req_company}' could not be definitively confirmed.")
         else:
@@ -231,6 +245,7 @@ def perform_verification(
         evidence_sufficient=bool(fetched_evidence_dict or final_status == "NEEDS REVIEW"),
         final_status=final_status,
         final_url=final_url,
+        url_type=url_type if final_url else None,
         confidence=confidence,
         reasoning=final_reasoning,
         product_match=product_match,
@@ -361,17 +376,44 @@ def search_node(state: SDSState) -> Dict[str, Any]:
     row = state.get("row_data") or {}
     prod = str(row.get("Product Name") or row.get("Product") or "").strip()
     company = str(row.get("Product Company Name") or row.get("Company") or "").strip()
+    language = str(row.get("Language") or "").strip()
     country = str(row.get("Country") or "").strip()
-    part_num = str(row.get("Part Number") or "").strip()
 
-    query_parts = [prod]
+    # Guard: If any required SDS identity field is missing, flag as NEEDS REVIEW without fabricating defaults
+    if not prod or not company or not language or not country:
+        missing_fields = []
+        if not prod:
+            missing_fields.append("Product Name")
+        if not company:
+            missing_fields.append("Manufacturer")
+        if not language:
+            missing_fields.append("Language")
+        if not country:
+            missing_fields.append("Country/Jurisdiction")
+        return {
+            "discovered_candidates": [],
+            "final_status": "NEEDS REVIEW",
+            "final_url": "",
+            "confidence": 0,
+            "detailed_reasoning": f"Incomplete SDS search identity: missing required field(s): {', '.join(missing_fields)}. Cannot execute verified retrieval without complete request parameters.",
+            "next_action": "FINISH",
+            "messages": [
+                HumanMessage(content=f"Search halted: missing required SDS identity fields ({', '.join(missing_fields)}). Marked as NEEDS REVIEW.")
+            ]
+        }
+
+    # Primary search identity uses ONLY the four required fields:
+    # 1. Product Name, 2. Manufacturer Company, 3. SDS Language, 4. Jurisdiction/Country
+    query_parts = []
+    if prod:
+        query_parts.append(f'"{prod}"' if " " in prod else prod)
     if company:
-        query_parts.append(company)
-    if part_num:
-        query_parts.append(part_num)
-    query_parts.append("SDS Safety Data Sheet PDF")
-    if country and country.lower() not in ["united states", "us", "usa"]:
+        query_parts.append(f'"{company}"' if " " in company else company)
+    if language:
+        query_parts.append(language)
+    if country:
         query_parts.append(country)
+    query_parts.append("SDS PDF Safety Data Sheet")
 
     query = " ".join(query_parts)
 
@@ -390,6 +432,30 @@ def search_node(state: SDSState) -> Dict[str, Any]:
                     "source_query": query,
                     "discovered_at": now_str
                 })
+
+    # Optional Fallback Search: If primary 4-field search yielded no candidates and a Part/Catalog/CAS number is available
+    part_num = str(row.get("Part Number") or "").strip()
+    if len(discovered) == 0 and part_num:
+        fb_parts = []
+        if prod:
+            fb_parts.append(f'"{prod}"' if " " in prod else prod)
+        if company:
+            fb_parts.append(f'"{company}"' if " " in company else company)
+        fb_parts.append(part_num)
+        fb_parts.append("SDS PDF")
+        fb_query = " ".join(fb_parts)
+        fb_results = search_duckduckgo.invoke({"query": fb_query, "max_results": 5})
+        if isinstance(fb_results, list):
+            for idx, item in enumerate(fb_results):
+                if isinstance(item, dict) and "url" in item:
+                    discovered.append({
+                        "candidate_id": f"cand_fb_{idx}",
+                        "url": item["url"],
+                        "title": item.get("title", ""),
+                        "snippet": item.get("snippet", ""),
+                        "source_query": fb_query,
+                        "discovered_at": now_str
+                    })
 
     return {
         "discovered_candidates": discovered,
@@ -634,8 +700,11 @@ def extract_final_node(state: SDSState) -> Dict[str, Any]:
         if url_str and not is_valid_http_url(url_str):
             url_str = ""
 
+    url_type_cand = verification.get("url_type") or ("pdf" if url_str.lower().split("?")[0].endswith(".pdf") else "landing_page")
+
     provenance = {
         "selected_url": url_str,
+        "url_type": url_type_cand if url_str else None,
         "discovered_candidates_count": len(discovered),
         "successful_fetches_count": len(successful),
         "verified_at": datetime.now(timezone.utc).isoformat(),
@@ -648,16 +717,19 @@ def extract_final_node(state: SDSState) -> Dict[str, Any]:
             confidence=conf_int,
             detailed_reasoning=reason_candidate,
             final_url=url_str,
+            url_type=url_type_cand if url_str else None,
             provenance=provenance
         )
         final_status = val_result.status
         confidence = val_result.confidence
         detailed_reasoning = val_result.detailed_reasoning
         final_url = val_result.final_url
+        url_type = val_result.url_type
     except Exception as val_err:
         final_status = "NEEDS REVIEW"
         confidence = 0
         final_url = ""
+        url_type = None
         detailed_reasoning = f"Output validation adjusted: {str(val_err)}"
 
     return {
@@ -665,6 +737,7 @@ def extract_final_node(state: SDSState) -> Dict[str, Any]:
         "confidence": confidence,
         "detailed_reasoning": detailed_reasoning,
         "final_url": final_url,
+        "url_type": url_type,
         "provenance": provenance
     }
 

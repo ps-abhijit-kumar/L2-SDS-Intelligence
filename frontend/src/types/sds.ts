@@ -31,6 +31,7 @@ export interface SDSSearchResponse {
   status: SDSStatus | string;
   confidence: number;
   final_url: string;
+  url_type?: 'pdf' | 'landing_page';
   detailed_reasoning: string;
   timestamp: string;
   trace: AgentTraceStep[];
@@ -48,6 +49,7 @@ export interface HistoryItem {
   status: SDSStatus | string;
   confidence: number;
   final_url?: string;
+  url_type?: 'pdf' | 'landing_page';
   detailed_reasoning?: string;
   timestamp: string;
   messages?: AgentTraceStep[];

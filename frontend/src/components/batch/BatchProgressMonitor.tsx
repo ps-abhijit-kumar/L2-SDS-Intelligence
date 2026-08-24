@@ -44,9 +44,9 @@ export const BatchProgressMonitor: React.FC<BatchProgressMonitorProps> = ({ stat
 
           <span>
             {isRunning
-              ? 'Autonomous Multi-Sheet Batch In Progress'
+              ? 'Sequential SDS Batch In Progress'
               : isCompleted
-              ? 'Multi-Sheet Batch Processing Complete'
+              ? 'Batch Processing Complete'
               : 'Batch Processing Halted'}
           </span>
         </CardTitle>
@@ -82,11 +82,6 @@ export const BatchProgressMonitor: React.FC<BatchProgressMonitorProps> = ({ stat
                 Currently Processing Target
               </span>
               <p className="font-bold text-cyan-300 truncate">
-                {status.current_sheet && (
-                  <span className="font-mono text-cyan-400 mr-1.5 font-bold">
-                    [{status.current_sheet}]
-                  </span>
-                )}
                 {status.current_product || 'Evaluating chemical...'}
                 {status.current_company && (
                   <span className="text-slate-400 font-normal font-sans ml-1.5">
@@ -117,10 +112,10 @@ export const BatchProgressMonitor: React.FC<BatchProgressMonitorProps> = ({ stat
               </div>
               <div className="space-y-0.5">
                 <h4 className="font-bold text-emerald-300">
-                  All {total} Chemical Requests Evaluated & Preserved In Multi-Sheet Excel
+                  All {total} SDS Chemical Requests Evaluated & Saved
                 </h4>
                 <p className="text-emerald-200/80 text-[11px]">
-                  All worksheets updated in-place via FastMCP with confirmed URLs, status verdicts, and reasoning.
+                  Workbook updated in-place with confirmed URLs, status verdicts, and reasoning.
                 </p>
               </div>
             </div>
@@ -132,7 +127,7 @@ export const BatchProgressMonitor: React.FC<BatchProgressMonitorProps> = ({ stat
                 leftIcon={<Download className="w-3.5 h-3.5" />}
                 className="shadow-glow-emerald"
               >
-                Download Updated Multi-Sheet Excel
+                Download Updated Excel
               </Button>
             </a>
           </div>

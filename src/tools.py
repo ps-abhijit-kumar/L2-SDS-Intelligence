@@ -123,18 +123,10 @@ def rank_sds_candidates(
                     token_matches = sum(1 for tok in comp_tokens if tok in combined_text or tok in url)
                     score += int(10 * (token_matches / len(comp_tokens)))
 
-        if part_norm:
-            clean_url = re.sub(r'[^a-z0-9]', '', url)
-            clean_text = re.sub(r'[^a-z0-9]', '', combined_text)
-            if part_norm in clean_url:
-                score += 15
-            elif part_norm in clean_text:
-                score += 10
-
         if ".pdf" in url:
-            score += 15
+            score += 20
         elif "sds" in url or "msds" in url or "safety-data-sheet" in url:
-            score += 8
+            score += 10
 
         if any(ts in url for ts in TRUSTED_SITES):
             score += 10
