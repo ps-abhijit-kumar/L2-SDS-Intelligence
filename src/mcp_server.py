@@ -20,6 +20,8 @@ from src.workbook_utils import (
     classify_sheet,
     inspect_workbook
 )
+from src.security import safe_fetch_document, SecurityError
+from src.sds_parser import parse_sds_document
 
 mcp = FastMCP("ExcelMCP")
 
@@ -103,6 +105,36 @@ def update_request_status(
 
     wb.save(target_path)
     return "Success"
+
+@mcp.tool()
+def inspect_sds_document(url: str) -> str:
+    """
+    Safely retrieves and parses a candidate SDS document (PDF or HTML) behind the MCP boundary.
+    Enforces SSRF protection, bounded streaming, content-type verification, and multi-page section extraction.
+    Returns structured JSON evidence containing product identity, manufacturer, GHS sections, CAS numbers, and document type.
+    """
+    if not url or not isinstance(url, str):
+        return json.dumps({
+            "url": str(url),
+            "fetched_successfully": False,
+            "error": "Invalid or empty URL"
+        })
+    try:
+        data, content_type, final_url = safe_fetch_document(url, timeout=12.0)
+        evidence = parse_sds_document(data, content_type, final_url)
+        return json.dumps(evidence.model_dump())
+    except SecurityError as sec_err:
+        return json.dumps({
+            "url": url,
+            "fetched_successfully": False,
+            "error": f"Security Error (SSRF policy): {str(sec_err)}"
+        })
+    except Exception as e:
+        return json.dumps({
+            "url": url,
+            "fetched_successfully": False,
+            "error": f"Document inspection failed: {str(e)}"
+        })
 
 if __name__ == "__main__":
     mcp.run()

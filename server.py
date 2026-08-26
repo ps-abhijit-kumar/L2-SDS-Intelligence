@@ -427,7 +427,8 @@ async def run_batch_worker(
                     'final_url': '',
                     'confidence': 0,
                     'detailed_reasoning': '',
-                    'provenance': None
+                    'provenance': None,
+                    'mcp_client': mcp_client
                 }
 
                 try:

@@ -60,3 +60,17 @@ async def test_mcp_client_isolated_roundtrip():
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+@pytest.mark.asyncio
+async def test_mcp_inspect_sds_document_isolated():
+    client = SDSMCPClient()
+    await client.connect()
+    try:
+        # Inspect an invalid URL to test error handling & SSRF defense over stdio MCP
+        res_json = await client.inspect_sds_document("http://127.0.0.1:9999/malicious.pdf")
+        data = json.loads(res_json)
+        assert isinstance(data, dict)
+        assert data.get("fetched_successfully") is False
+        assert "Security Error" in data.get("error", "") or "error" in data
+    finally:
+        await client.disconnect()

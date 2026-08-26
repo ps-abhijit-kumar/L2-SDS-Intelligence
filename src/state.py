@@ -34,3 +34,6 @@ class SDSState(TypedDict):
     confidence: int
     detailed_reasoning: str
     provenance: Optional[Dict[str, Any]]
+
+    # MCP Client boundary integration
+    mcp_client: Optional[Any]

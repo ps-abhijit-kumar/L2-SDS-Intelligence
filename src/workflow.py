@@ -632,7 +632,7 @@ def rank_node(state: SDSState) -> Dict[str, Any]:
         ]
     }
 
-def fetch_node(state: SDSState) -> Dict[str, Any]:
+async def fetch_node(state: SDSState) -> Dict[str, Any]:
     target_url = state.get("current_candidate_url") or ""
     fetched_urls = list(state.get("fetched_urls") or [])
     successful = dict(state.get("successful_fetches") or {})
@@ -644,6 +644,40 @@ def fetch_node(state: SDSState) -> Dict[str, Any]:
     if target_url not in fetched_urls:
         fetched_urls.append(target_url)
 
+    mcp_client = state.get("mcp_client")
+    if mcp_client and hasattr(mcp_client, "inspect_sds_document"):
+        try:
+            evidence_json = await mcp_client.inspect_sds_document(target_url)
+            evidence_dict = json.loads(evidence_json) if isinstance(evidence_json, str) else evidence_json
+            if isinstance(evidence_dict, dict) and evidence_dict.get("fetched_successfully"):
+                successful[target_url] = evidence_dict
+                return {
+                    "fetched_urls": fetched_urls,
+                    "successful_fetches": successful,
+                    "current_candidate_url": target_url,
+                    "messages": [
+                        AIMessage(content=f"[MCP Document Inspection] Retrieved structured evidence for {target_url}. Is SDS: {evidence_dict.get('is_sds')}, CAS: {evidence_dict.get('cas_numbers')}")
+                    ]
+                }
+            else:
+                err_msg = (evidence_dict.get("error") if isinstance(evidence_dict, dict) else None) or "Document inspection returned failure."
+                failed[target_url] = err_msg
+                return {
+                    "fetched_urls": fetched_urls,
+                    "failed_fetches": failed,
+                    "messages": [
+                        AIMessage(content=f"[MCP Document Inspection Error] {target_url}: {err_msg}")
+                    ]
+                }
+        except Exception as mcp_err:
+            failed[target_url] = f"MCP Error: {str(mcp_err)}"
+            return {
+                "fetched_urls": fetched_urls,
+                "failed_fetches": failed,
+                "messages": [AIMessage(content=f"MCP Error on {target_url}: {str(mcp_err)}")]
+            }
+
+    # Safe deterministic fallback if MCP client not attached
     try:
         data, content_type, final_url = safe_fetch_document(target_url, timeout=12.0)
         evidence = parse_sds_document(data, content_type, final_url)

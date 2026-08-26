@@ -74,3 +74,12 @@ class SDSMCPClient:
         }
         result = await self._session.call_tool("update_request_status", arguments=arguments)
         return result.content[0].text if result.content else ""
+
+    async def inspect_sds_document(self, url: str) -> str:
+        """
+        Invokes the MCP server tool 'inspect_sds_document' to safely fetch and extract structured SDS evidence.
+        """
+        if not self._session:
+            raise RuntimeError("Not connected to MCP server")
+        result = await self._session.call_tool("inspect_sds_document", arguments={"url": url})
+        return result.content[0].text if result.content else "{}"
