@@ -88,3 +88,6 @@ uploads/
 *.xlsx
 !sample_requests_eval.xlsx
 !sample_requests.xlsx
+
+# Runtime execution logs
+logs/agent_trace.jsonl
