@@ -9,33 +9,49 @@ interface BatchUploadCardProps {
   preview?: BatchPreviewResponse;
   batchStatus?: BatchStatusResponse;
   onUploadFile: (file: File) => void;
+  onSelectSheet?: (sheetName: string) => void;
   onSelectDefault?: () => void;
   onStartBatch: () => void;
   onResetBatch: () => void;
   isUploading?: boolean;
   isStarting?: boolean;
   isResetting?: boolean;
+  isSelectingSheet?: boolean;
 }
 
 export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
   preview,
   batchStatus,
   onUploadFile,
+  onSelectSheet,
   onStartBatch,
   onResetBatch,
   isUploading = false,
   isStarting = false,
   isResetting = false,
+  isSelectingSheet = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  const candidateSheets = (preview?.sheets_summary || []).filter(
+    (s) => s.valid_requests > 0 && s.classification !== 'SUMMARY'
+  );
+
+  const [selectedSheet, setSelectedSheet] = useState<string>(
+    preview?.selected_sheets?.[0] || candidateSheets[0]?.sheet_name || ''
+  );
+
+  React.useEffect(() => {
+    if (preview?.selected_sheets && preview.selected_sheets.length > 0) {
+      setSelectedSheet(preview.selected_sheets[0]);
+    } else if (candidateSheets.length > 0) {
+      setSelectedSheet(candidateSheets[0].sheet_name);
+    }
+  }, [preview?.selected_sheets, preview?.sheets_summary]);
+
   const isRunning = batchStatus?.status === 'running';
-  const isDefaultFile = preview?.file_name === 'sample_requests_eval.xlsx';
   
-  const totalWorkbookSheets = preview?.workbook_sheets_count ?? preview?.total_sheets ?? 1;
-  const totalPhysicalRows = preview?.workbook_physical_rows ?? 0;
-  const sdsSheetsCount = preview?.sds_sheets_count ?? preview?.eligible_sheets ?? 1;
   const validRequests = preview?.sds_requests_count ?? preview?.total_rows ?? 0;
   const pendingRequests = preview?.pending_requests_count ?? preview?.pending_rows ?? 0;
   const completedRequests = preview?.completed_requests_count ?? preview?.completed_rows ?? 0;
@@ -142,7 +158,11 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
                 </p>
                 <p className="text-[10px] font-mono text-slate-400">
                   {preview?.file_name
-                    ? `${validRequests} SDS Requests Detected`
+                    ? preview.selected_sheets && preview.selected_sheets.length > 0
+                      ? `${preview.selected_sheets[0]} (${validRequests} SDS Requests)`
+                      : candidateSheets.length > 1
+                      ? 'Select a request set below'
+                      : `${validRequests} SDS Requests Detected`
                     : 'Upload an Excel (.xlsx) workbook above'}
                 </p>
               </div>
@@ -180,6 +200,8 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
                 ? 'Processing Batch...'
                 : !preview?.file_name
                 ? 'Upload Workbook to Begin'
+                : validRequests === 0
+                ? 'Select a Request Set'
                 : pendingRequests === 0
                 ? 'All Requests Completed'
                 : `Start Batch Processing (${pendingRequests} Pending)`}
@@ -228,6 +250,83 @@ export const BatchUploadCard: React.FC<BatchUploadCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Request Sets Found & Selection */}
+      {preview?.file_name && candidateSheets.length > 1 && (
+        <div className="p-4 rounded-xl bg-[#0B1020] border border-cyan-500/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-200 uppercase tracking-wide font-mono">
+              Request Sets Found
+            </span>
+            <span className="text-[10px] font-mono text-cyan-400">
+              {candidateSheets.length} Datasets Detected
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {candidateSheets.map((s) => {
+              const isCurrentActive = preview?.selected_sheets?.includes(s.sheet_name);
+              return (
+                <button
+                  key={s.sheet_name}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSheet(s.sheet_name);
+                    if (onSelectSheet && !isCurrentActive) {
+                      onSelectSheet(s.sheet_name);
+                    }
+                  }}
+                  className={`text-xs px-3 py-1.5 rounded-lg border font-mono transition-all flex items-center gap-2 ${
+                    isCurrentActive
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 font-bold shadow-sm shadow-cyan-500/20'
+                      : 'bg-slate-900/60 text-slate-400 border-white/[0.08] hover:border-white/[0.2]'
+                  }`}
+                >
+                  <span className="font-semibold">{s.sheet_name}</span>
+                  <span>—</span>
+                  <span>{s.valid_requests} requests</span>
+                  {isCurrentActive && (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                      Active
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 border-t border-white/[0.06]">
+            <div className="flex-1 flex items-center gap-2">
+              <label htmlFor="request-set-select" className="text-xs text-slate-400 shrink-0">
+                Select Request Set:
+              </label>
+              <select
+                id="request-set-select"
+                value={selectedSheet}
+                onChange={(e) => setSelectedSheet(e.target.value)}
+                className="flex-1 bg-[#070A12] border border-white/[0.15] text-slate-200 text-xs rounded-lg px-3 py-2 focus:border-cyan-400 focus:outline-none cursor-pointer"
+              >
+                <option value="">-- Select a Request Set --</option>
+                {candidateSheets.map((s) => (
+                  <option key={s.sheet_name} value={s.sheet_name}>
+                    {s.sheet_name} — {s.valid_requests} requests
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!selectedSheet || isSelectingSheet || (preview?.selected_sheets?.length === 1 && preview?.selected_sheets[0] === selectedSheet)}
+              onClick={() => selectedSheet && onSelectSheet?.(selectedSheet)}
+              isLoading={isSelectingSheet}
+            >
+              Use Selected Request Set
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

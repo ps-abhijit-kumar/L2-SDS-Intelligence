@@ -259,117 +259,259 @@ def perform_verification(
 # Graph Nodes
 # ==============================================================================
 
-def decide_action_node(state: SDSState) -> Dict[str, Any]:
+POLICY_SYSTEM_PROMPT = """You are the policy reasoning agent for Safety Data Sheet (SDS) discovery, retrieval, and verification.
+Your role is to analyze the target chemical request, available candidate URLs, fetched document evidence, tool observations, and past action history to select the next discrete action.
+
+Permitted Actions:
+- SEARCH: Execute web search for candidate SDS URLs. (Use when no candidates exist, or to search an alternative query).
+- RANK: Rank discovered candidate URLs by relevance to product, manufacturer, and jurisdiction.
+- FETCH: Download and parse document text from a specific candidate URL. (Provide target_url matching one of the discovered candidate URLs).
+- RETRY: Attempt an alternative search query or alternative candidate when prior attempts fail.
+- FINISH: Conclude the retrieval workflow when sufficient matching SDS evidence has been gathered or when candidates/retries are exhausted.
+
+Reasoning Rules:
+1. If no candidates have been discovered, select SEARCH.
+2. If candidates have been discovered but not yet ranked, select RANK.
+3. If ranked candidates exist and unvisited candidates remain, select FETCH with the top unvisited target_url.
+4. If a fetched document is a valid SDS matching the target product and manufacturer, select FINISH to proceed to independent verification.
+5. If a fetched candidate fails or is not an SDS, check remaining candidates: select FETCH for the next candidate, or RETRY with an alternative query if none remain.
+6. If the iteration budget is reached or candidates are exhausted, select FINISH.
+7. Always provide a clear, concise justification in 'reason'.
+"""
+
+def format_policy_context(state: SDSState) -> str:
+    row = state.get("row_data") or {}
+    prod = str(row.get("Product Name") or row.get("Product") or "").strip()
+    comp = str(row.get("Product Company Name") or row.get("Company") or "").strip()
+    lang = str(row.get("Language") or "English").strip()
+    country = str(row.get("Country") or "").strip()
+    part = str(row.get("Part Number") or "").strip()
+
+    iteration = state.get("iteration_count", 0) + 1
+    retry_count = state.get("retry_count", 0)
+    discovered = state.get("discovered_candidates") or []
+    ranked = state.get("ranked_candidates") or []
+    fetched = list(state.get("fetched_urls") or [])
+    successful = state.get("successful_fetches") or {}
+    failed = state.get("failed_fetches") or {}
+    action_history = state.get("action_history") or []
+    messages = state.get("messages") or []
+
+    unvisited = [c for c in (ranked or discovered) if c.get("url") and c.get("url") not in fetched]
+
+    evidence_lines = []
+    for url, ev in successful.items():
+        is_sds = ev.get("is_sds", False)
+        cas = ev.get("cas_numbers", [])
+        parts = ev.get("part_numbers", [])
+        sections = list(ev.get("sections", {}).keys())
+        url_type = ev.get("url_type", "pdf")
+        doc_lang = ev.get("language", "")
+        doc_country = ev.get("country", "")
+        evidence_lines.append(
+            f"- URL: {url} | Type: {url_type} | Is SDS: {is_sds} | CAS: {cas[:3]} | Parts: {parts[:3]} | Lang: {doc_lang} | Country: {doc_country} | Sections: {len(sections)}"
+        )
+
+    failure_lines = [f"- URL: {url} | Error: {err}" for url, err in failed.items()]
+
+    recent_actions = [
+        f"- Step {i+1}: Action={a.get('action')}, Target={a.get('target_url') or 'N/A'}, Reason={a.get('reason')}"
+        for i, a in enumerate(action_history[-4:])
+    ]
+
+    recent_obs = [
+        f"- {m.content}" for m in messages[-4:] if hasattr(m, "content") and m.content
+    ]
+
+    return f"""Target Chemical SDS Request:
+- Product Name: {prod}
+- Manufacturer: {comp}
+- Language: {lang}
+- Jurisdiction/Country: {country}
+- Part / Catalog / CAS: {part if part else "None"}
+
+Current Retrieval State:
+- Iteration: {iteration} of 6 maximum
+- Retry Count: {retry_count} of 2 maximum
+- Discovered Candidates Count: {len(discovered)}
+- Ranked Candidates Count: {len(ranked)}
+- Unvisited Candidates Remaining: {len(unvisited)}
+  Top Unvisited URLs: {[c.get('url') for c in unvisited[:3]]}
+- Already Fetched URLs: {fetched}
+
+Fetched Document Evidence:
+{chr(10).join(evidence_lines) if evidence_lines else "None fetched successfully yet."}
+
+Fetch Failures / Errors:
+{chr(10).join(failure_lines) if failure_lines else "None."}
+
+Recent Observations:
+{chr(10).join(recent_obs) if recent_obs else "None."}
+
+Recent Action History:
+{chr(10).join(recent_actions) if recent_actions else "No previous actions."}
+
+Determine the next ActionDecision."""
+
+def decide_action_node(state: SDSState, llm: Optional[Any] = None) -> Dict[str, Any]:
     """
-    Dynamic Action Policy Engine (Priority 3).
-    Evaluates current state, available candidates, fetched evidence, and action history
-    to choose the next valid discrete action (SEARCH, RANK, FETCH, VERIFY, FINISH, RETRY).
+    Real LLM Policy Engine for Action Selection.
+    Provides current state, candidate evidence, and observations to the LLM
+    and receives a structured ActionDecision, which is then validated by a deterministic guard.
     """
     iteration = state.get("iteration_count", 0) + 1
     retry_count = state.get("retry_count", 0)
     discovered = state.get("discovered_candidates") or []
     ranked = state.get("ranked_candidates") or []
-    fetched_urls = state.get("fetched_urls") or []
+    fetched_urls = list(state.get("fetched_urls") or [])
     successful = state.get("successful_fetches") or {}
     failed = state.get("failed_fetches") or {}
     action_history = list(state.get("action_history") or [])
     draft = state.get("draft_decision")
     verification = state.get("verification_result")
 
+    # 1. Deterministic hard budget limit
     if iteration > 6:
-        action_entry = {"action": "FINISH", "reason": "Iteration limit reached. Concluding retrieval.", "timestamp": datetime.now(timezone.utc).isoformat()}
+        action_entry = {
+            "action": "FINISH",
+            "reason": "Iteration limit reached. Concluding retrieval for independent verification.",
+            "target_url": None,
+            "search_query": None,
+            "retry_count": retry_count,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
         return {
             "next_action": "FINISH",
             "iteration_count": iteration,
             "action_history": action_history + [action_entry]
         }
 
-    # 1. If no search candidates discovered yet -> SEARCH
-    if not discovered:
-        action_entry = {"action": "SEARCH", "reason": "Initial state: initiating targeted chemical discovery search.", "timestamp": datetime.now(timezone.utc).isoformat()}
-        return {
-            "next_action": "SEARCH",
-            "iteration_count": iteration,
-            "action_history": action_history + [action_entry]
-        }
+    # 2. Invoke real LLM policy if available
+    active_llm = llm or state.get("llm") or get_llm()
+    decision: Optional[ActionDecision] = None
 
-    # 2. If candidates discovered but unranked -> RANK
-    if discovered and not ranked:
-        action_entry = {"action": "RANK", "reason": "Candidates discovered: evaluating deterministic utility ranking.", "timestamp": datetime.now(timezone.utc).isoformat()}
-        return {
-            "next_action": "RANK",
-            "iteration_count": iteration,
-            "action_history": action_history + [action_entry]
-        }
+    if active_llm is not None:
+        try:
+            structured_llm = active_llm.with_structured_output(ActionDecision)
+            context_prompt = format_policy_context(state)
+            messages = [
+                SystemMessage(content=POLICY_SYSTEM_PROMPT),
+                HumanMessage(content=context_prompt)
+            ]
+            raw_decision = structured_llm.invoke(messages)
+            if isinstance(raw_decision, ActionDecision):
+                decision = raw_decision
+            elif isinstance(raw_decision, dict):
+                decision = ActionDecision(**raw_decision)
+        except Exception:
+            decision = None
 
-    unvisited = [c for c in ranked if c.get("url") and c.get("url") not in fetched_urls]
+    # 3. Deterministic Python Action Guard
+    unvisited = [c for c in (ranked or discovered) if c.get("url") and c.get("url") not in fetched_urls]
 
-    # 3. If nothing successfully fetched yet, and unvisited candidates remain (up to 3 tries) -> FETCH
-    if (not successful or not draft) and unvisited and len(fetched_urls) < 3 and not verification:
-        top_cand = unvisited[0]
-        action_entry = {
-            "action": "FETCH",
-            "target_url": top_cand.get("url"),
-            "reason": f"Fetching candidate URL: {top_cand.get('url')}",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        return {
-            "next_action": "FETCH",
-            "current_candidate_url": top_cand.get("url", ""),
-            "iteration_count": iteration,
-            "action_history": action_history + [action_entry]
-        }
-
-    # 4. If fetch attempts made and no draft yet -> DRAFT
-    if fetched_urls and not draft and not verification:
-        action_entry = {"action": "DRAFT", "reason": "Gathered candidate evidence: drafting compliance verdict.", "timestamp": datetime.now(timezone.utc).isoformat()}
-        return {
-            "next_action": "DRAFT",
-            "iteration_count": iteration,
-            "action_history": action_history + [action_entry]
-        }
-
-    # 5. If draft formulated and not verified -> VERIFY
-    if draft and not verification:
-        action_entry = {"action": "VERIFY", "reason": "Draft formulated: executing independent verification stage.", "timestamp": datetime.now(timezone.utc).isoformat()}
-        return {
-            "next_action": "VERIFY",
-            "iteration_count": iteration,
-            "action_history": action_history + [action_entry]
-        }
-
-    # 6. Verification completed -> decide retry or finish
-    if verification:
-        if not verification.get("approved") and retry_count < 2 and unvisited:
-            next_cand = unvisited[0]
-            action_entry = {
-                "action": "RETRY",
-                "target_url": next_cand.get("url"),
-                "reason": f"Verification requested alternative candidate: retrying with {next_cand.get('url')}",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            return {
-                "next_action": "FETCH",
-                "current_candidate_url": next_cand.get("url", ""),
-                "retry_count": retry_count + 1,
-                "draft_decision": None,
-                "verification_result": None,
-                "iteration_count": iteration,
-                "action_history": action_history + [action_entry]
-            }
+    if decision is None:
+        # Deterministic fallback policy when LLM is unavailable or failed
+        if not discovered:
+            decision = ActionDecision(
+                action="SEARCH",
+                reason="Initial state: initiating targeted chemical discovery search."
+            )
+        elif discovered and not ranked:
+            decision = ActionDecision(
+                action="RANK",
+                reason="Candidates discovered: evaluating deterministic utility ranking."
+            )
+        elif unvisited and len(fetched_urls) < 3 and not successful and not draft and not verification:
+            top_cand = unvisited[0]
+            decision = ActionDecision(
+                action="FETCH",
+                target_url=top_cand.get("url"),
+                reason=f"Fetching candidate URL: {top_cand.get('url')}"
+            )
+        elif fetched_urls and not draft and not verification and not successful:
+            if unvisited and retry_count < 2:
+                next_cand = unvisited[0]
+                decision = ActionDecision(
+                    action="RETRY",
+                    target_url=next_cand.get("url"),
+                    reason=f"Retrying with alternative candidate: {next_cand.get('url')}",
+                    retry_count=retry_count + 1
+                )
+            else:
+                decision = ActionDecision(
+                    action="FINISH",
+                    reason="Candidate attempts exhausted. Concluding retrieval for verification."
+                )
+        elif successful or draft or verification:
+            decision = ActionDecision(
+                action="FINISH",
+                reason="Candidate evidence evaluated. Concluding retrieval for independent verification."
+            )
         else:
-            action_entry = {"action": "FINISH", "reason": "Verification completed. Concluding verdict.", "timestamp": datetime.now(timezone.utc).isoformat()}
-            return {
-                "next_action": "FINISH",
-                "iteration_count": iteration,
-                "action_history": action_history + [action_entry]
-            }
+            decision = ActionDecision(
+                action="FINISH",
+                reason="Default completion."
+            )
+    else:
+        # Guard and validate the LLM-selected ActionDecision
+        validated_action = str(decision.action).upper()
+        if validated_action not in ["SEARCH", "RANK", "FETCH", "VERIFY", "FINISH", "RETRY", "DRAFT"]:
+            validated_action = "FINISH"
 
-    action_entry = {"action": "FINISH", "reason": "Default completion.", "timestamp": datetime.now(timezone.utc).isoformat()}
+        if validated_action == "FETCH":
+            target_url = str(decision.target_url or "").strip()
+            discovered_urls = {c.get("url") for c in (ranked or discovered) if c.get("url")}
+
+            # Guard: target_url must belong to discovered candidates and not already fetched
+            if not target_url or target_url not in discovered_urls or target_url in fetched_urls:
+                if unvisited:
+                    # Guard recovery: redirect to highest-ranked unvisited candidate
+                    target_url = unvisited[0].get("url", "")
+                    decision.target_url = target_url
+                else:
+                    # No valid unvisited URLs remain -> route safely to FINISH
+                    validated_action = "FINISH"
+                    decision.action = "FINISH"
+                    decision.target_url = None
+                    decision.reason = "No unvisited candidate URLs available to fetch. Concluding retrieval."
+
+        if validated_action in ["SEARCH", "RETRY"] and discovered and len(fetched_urls) >= 3:
+            # Guard against unbounded search cycles
+            validated_action = "FINISH"
+            decision.action = "FINISH"
+            decision.reason = "Maximum search and fetch budget reached. Finalizing for verification."
+
+        decision.action = validated_action
+
+    target_candidate_url = decision.target_url or state.get("current_candidate_url", "")
+    new_retry_count = decision.retry_count if decision.retry_count > retry_count else retry_count
+
+    if decision.action == "RETRY":
+        new_retry_count += 1
+        if decision.target_url:
+            decision.action = "FETCH"
+            target_candidate_url = decision.target_url
+        else:
+            decision.action = "SEARCH"
+
+    action_entry = {
+        "action": decision.action,
+        "reason": decision.reason,
+        "target_url": decision.target_url,
+        "search_query": decision.search_query,
+        "retry_count": new_retry_count,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
     return {
-        "next_action": "FINISH",
+        "next_action": decision.action,
+        "current_candidate_url": target_candidate_url,
         "iteration_count": iteration,
-        "action_history": action_history + [action_entry]
+        "retry_count": new_retry_count,
+        "action_history": action_history + [action_entry],
+        "messages": [
+            AIMessage(content=f"Agent Decision: Action={decision.action}, Reason={decision.reason}")
+        ]
     }
 
 def search_node(state: SDSState) -> Dict[str, Any]:
@@ -753,13 +895,11 @@ def route_action(state: SDSState) -> str:
         return "rank"
     elif action == "FETCH":
         return "fetch"
-    elif action == "DRAFT":
-        return "draft"
     elif action == "VERIFY":
         return "verify"
-    elif action == "FINISH":
-        return "extract_final"
-    return "extract_final"
+    elif action in ["DRAFT", "FINISH"]:
+        return "draft"
+    return "draft"
 
 def route_verification(state: SDSState) -> str:
     verification = state.get("verification_result") or {}
@@ -798,8 +938,7 @@ def create_sds_graph():
             "rank": "rank",
             "fetch": "fetch",
             "draft": "draft",
-            "verify": "verify",
-            "extract_final": "extract_final"
+            "verify": "verify"
         }
     )
 

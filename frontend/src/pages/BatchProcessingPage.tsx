@@ -12,6 +12,7 @@ import {
   useStartBatch,
   useUploadBatch,
   useResetBatch,
+  useConfirmMapping,
 } from '../hooks/useBatch';
 import { BatchRow } from '../types/sds';
 import { api } from '../services/api';
@@ -25,6 +26,7 @@ export const BatchProcessingPage: React.FC = () => {
   const { mutate: uploadFile, isPending: isUploading, error: uploadError } = useUploadBatch();
   const { mutate: startBatch, isPending: isStarting, error: startError } = useStartBatch();
   const { mutate: resetBatch, isPending: isResetting, error: resetError } = useResetBatch();
+  const { mutate: confirmMapping, isPending: isSelectingSheet } = useConfirmMapping();
 
   const handleUpload = (file: File) => {
     uploadFile(file);
@@ -36,6 +38,13 @@ export const BatchProcessingPage: React.FC = () => {
 
   const handleReset = () => {
     resetBatch();
+  };
+
+  const handleSelectSheet = (sheetName: string) => {
+    confirmMapping({
+      ...(preview?.column_mapping || {}),
+      selected_sheets: [sheetName],
+    });
   };
 
   const rows = preview?.rows || [];
@@ -116,11 +125,13 @@ export const BatchProcessingPage: React.FC = () => {
         preview={preview}
         batchStatus={batchStatus}
         onUploadFile={handleUpload}
+        onSelectSheet={handleSelectSheet}
         onStartBatch={handleStart}
         onResetBatch={handleReset}
         isUploading={isUploading}
         isStarting={isStarting}
         isResetting={isResetting}
+        isSelectingSheet={isSelectingSheet}
       />
 
       {/* Live Batch Execution Progress Monitor */}

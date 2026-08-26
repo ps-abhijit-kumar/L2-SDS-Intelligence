@@ -166,36 +166,33 @@ def extract_table_from_dataframe(df_raw: pd.DataFrame) -> Tuple[pd.DataFrame, Di
     return df_raw, mapping, 0
 
 def classify_sheet(sheet_name: str, columns: List[str], valid_product_rows_count: int, total_physical_rows: int) -> str:
-    """Classifies an Excel worksheet into SDS_REQUESTS, SUPPORTING_DATA, SUMMARY, or UNKNOWN."""
-    norm_name = re.sub(r'[^a-z0-9]', '', sheet_name.lower())
+    """
+    Classifies an Excel worksheet into SDS_REQUESTS, SUPPORTING_DATA, SUMMARY, or UNKNOWN
+    strictly based on the worksheet's column structure, content, and valid product records.
+    Sheet names are NOT used to force request dataset status.
+    """
+    cols_norm = ' '.join([re.sub(r'[^a-z0-9]', ' ', str(c).lower()) for c in columns])
 
-    # 1. Summary / Pivot / KPI sheets
-    if any(k in norm_name for k in ['summary', 'pivot', 'total', 'kpi', 'dashboard', 'overview', 'report']):
+    # 1. Structural check for Summary / KPI datasets
+    has_summary_cols = any(k in cols_norm for k in ['metric', 'total value', 'sum', 'kpi', 'grand total', 'subtotal'])
+    if has_summary_cols and valid_product_rows_count == 0:
         return 'SUMMARY'
 
-    # 2. Supporting / Reference / Master data sheets
-    if any(k in norm_name for k in [
-        'allocation', 'lookup', 'xref', 'matrix', 'reference', 'config', 'log',
-        'mapping', 'inventory', 'inv', 'stock', 'warehouse', 'catalog', 'pricing',
-        'master', 'vendor', 'supplier', 'raw', 'archive', 'data', 'metadata',
-        'table', 'list', 'code', 'category', 'plant', 'customer'
-    ]):
-        return 'SUPPORTING_DATA'
+    # 2. Structural check for genuine SDS chemical request records
+    has_product_col = any(k in cols_norm for k in ['product', 'chemical', 'substance', 'item', 'material'])
+    has_company_col = any(k in cols_norm for k in ['company', 'manufacturer', 'supplier', 'vendor', 'producer', 'brand'])
 
-    if valid_product_rows_count == 0:
-        return 'SUPPORTING_DATA' if total_physical_rows > 30 else 'UNKNOWN'
-
-    cols_norm = ' '.join([re.sub(r'[^a-z0-9]', ' ', str(c).lower()) for c in columns])
-    has_product = any(k in cols_norm for k in ['product', 'chemical', 'substance', 'item', 'material'])
-    has_company = any(k in cols_norm for k in ['company', 'manufacturer', 'supplier', 'vendor'])
-    has_sds_markers = any(k in cols_norm for k in ['sds', 'msds', 'language', 'country', 'jurisdiction', 'status', 'found url', 'cas', 'part number', 'request'])
-
-    if norm_name in ['part1', 'part', 'request', 'requests', 'sds', 'sdsrequests', 'sample', 'batch', 'eval', 'sheet1']:
-        if valid_product_rows_count > 0:
-            return 'SDS_REQUESTS'
-
-    if has_product and has_company and has_sds_markers and valid_product_rows_count > 0:
+    if has_product_col and has_company_col and valid_product_rows_count > 0:
         return 'SDS_REQUESTS'
+
+    # 3. Structural check for Supporting / Operational data (squads, allocations, reference tables)
+    if valid_product_rows_count == 0:
+        if total_physical_rows > 0:
+            norm_name = re.sub(r'[^a-z0-9]', '', sheet_name.lower())
+            if any(k in norm_name for k in ['summary', 'pivot', 'total', 'kpi', 'report']):
+                return 'SUMMARY'
+            return 'SUPPORTING_DATA'
+        return 'UNKNOWN'
 
     return 'SUPPORTING_DATA' if total_physical_rows > 30 else 'UNKNOWN'
 
@@ -204,7 +201,11 @@ def inspect_workbook(
     custom_mapping: Optional[Dict[str, Optional[str]]] = None,
     custom_selected_sheets: Optional[List[str]] = None
 ) -> Dict[str, Any]:
-    """Semantically extracts and normalizes four-field chemical SDS requests across all sheets in any Excel workbook."""
+    """
+    Semantically identifies the SDS request dataset in an Excel workbook,
+    filters out supporting/summary sheets, and extracts normalized request records
+    based strictly on the four required fields: Product Name, Manufacturer, Language, Country.
+    """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Excel file not found at: {file_path}")
 
@@ -214,6 +215,68 @@ def inspect_workbook(
     except Exception as e:
         raise ValueError(f"Failed to open Excel workbook: {str(e)}")
 
+    # Pass 1: Analyze structure, map semantic headers, and classify all worksheets
+    sheet_data: Dict[str, Dict[str, Any]] = {}
+    for sheet_name in sheet_names:
+        try:
+            df_raw = pd.read_excel(file_path, sheet_name=sheet_name)
+        except Exception:
+            continue
+
+        sheet_physical_rows = len(df_raw)
+        df, sheet_mapping, header_offset = extract_table_from_dataframe(df_raw)
+
+        if custom_mapping:
+            for k, v in custom_mapping.items():
+                if v and v in df.columns:
+                    sheet_mapping[k] = v
+
+        prod_col = sheet_mapping.get('product')
+        comp_col = sheet_mapping.get('company')
+        lang_col = sheet_mapping.get('language')
+        country_col = sheet_mapping.get('country')
+        has_lang_col = bool(lang_col and lang_col in df.columns)
+        has_country_col = bool(country_col and country_col in df.columns)
+
+        valid_product_rows = 0
+        if prod_col and prod_col in df.columns and comp_col and comp_col in df.columns:
+            for _, r in df.iterrows():
+                raw_prod = r.get(prod_col)
+                raw_comp = r.get(comp_col)
+                if not is_valid_product_value(raw_prod, str(prod_col)) or not is_valid_manufacturer_value(raw_comp, str(comp_col)):
+                    continue
+                if str(raw_prod).strip().lower() == str(raw_comp).strip().lower():
+                    continue
+                if not has_lang_col and not has_country_col:
+                    continue
+                valid_product_rows += 1
+
+        classification = classify_sheet(sheet_name, list(df.columns), valid_product_rows, sheet_physical_rows)
+        sheet_data[sheet_name] = {
+            'df': df,
+            'mapping': sheet_mapping,
+            'header_offset': header_offset,
+            'physical_rows': sheet_physical_rows,
+            'valid_rows': valid_product_rows,
+            'classification': classification
+        }
+
+    # Determine candidate SDS request sheets
+    candidate_sds_sheets = [
+        s for s, info in sheet_data.items()
+        if info['classification'] == 'SDS_REQUESTS' and info['valid_rows'] > 0
+    ]
+
+    # Determine active SDS request sheets
+    if custom_selected_sheets is not None:
+        active_sheet_names = set(custom_selected_sheets)
+    elif len(candidate_sds_sheets) == 1:
+        active_sheet_names = set(candidate_sds_sheets)
+    else:
+        # When multiple request datasets exist, do not merge them. User selects ONE request set.
+        active_sheet_names = set()
+
+    # Pass 2: Extract aligned SDS requests strictly from active SDS request datasets
     workbook_physical_rows = 0
     sheets_analysis = []
     global_mapping: Dict[str, Optional[str]] = {}
@@ -228,24 +291,21 @@ def inspect_workbook(
     completed_requests_count = 0
 
     for sheet_name in sheet_names:
-        try:
-            df_raw = pd.read_excel(file_path, sheet_name=sheet_name)
-        except Exception:
+        if sheet_name not in sheet_data:
             continue
 
-        sheet_physical_rows = len(df_raw)
+        info = sheet_data[sheet_name]
+        df = info['df']
+        sheet_mapping = info['mapping']
+        header_offset = info['header_offset']
+        sheet_physical_rows = info['physical_rows']
+        classification = info['classification']
         workbook_physical_rows += sheet_physical_rows
-        df, sheet_mapping, header_offset = extract_table_from_dataframe(df_raw)
 
         for c in df.columns:
             all_columns_set.add(str(c))
 
-        if custom_mapping:
-            for k, v in custom_mapping.items():
-                if v and v in df.columns:
-                    sheet_mapping[k] = v
-
-        if not global_mapping:
+        if not global_mapping and sheet_mapping.get('product') and sheet_mapping.get('company'):
             global_mapping = dict(sheet_mapping)
 
         prod_col = sheet_mapping.get('product')
@@ -265,8 +325,8 @@ def inspect_workbook(
         sheet_valid_requests = 0
         sheet_pending = 0
         sheet_completed = 0
+        sheet_is_active = sheet_name in active_sheet_names
 
-        # Only process sheets that contain both Product and Company columns
         if prod_col and prod_col in df.columns and comp_col and comp_col in df.columns:
             for r_idx, r in df.iterrows():
                 raw_prod = r.get(prod_col)
@@ -274,7 +334,7 @@ def inspect_workbook(
                 raw_lang = r.get(lang_col) if has_lang_col else None
                 raw_country = r.get(country_col) if has_country_col else None
 
-                # Strict validation of Product Name and Manufacturer
+                # Validate genuine chemical product name and manufacturer
                 if not is_valid_product_value(raw_prod, str(prod_col)) or not is_valid_manufacturer_value(raw_comp, str(comp_col)):
                     continue
 
@@ -283,11 +343,10 @@ def inspect_workbook(
                 if prod_val.lower() == comp_val.lower():
                     continue
 
-                # Strict check for Language and Country without silent defaults
+                # Validate language and country
                 has_valid_lang = is_valid_text_cell(raw_lang, str(lang_col) if lang_col else '')
                 has_valid_country = is_valid_text_cell(raw_country, str(country_col) if country_col else '')
 
-                # In tables with no language and no country columns at all (raw parts lists), skip to avoid false positives
                 if not has_lang_col and not has_country_col:
                     continue
 
@@ -306,7 +365,7 @@ def inspect_workbook(
                     except (ValueError, TypeError):
                         confidence_val = 0
 
-                # Determine completion state based strictly on 4 required fields
+                # Determine status based on the 4 required fields
                 if not has_valid_lang or not has_valid_country:
                     missing = []
                     if not has_valid_lang:
@@ -317,55 +376,65 @@ def inspect_workbook(
                     confidence_val = 0
                     found_url_val = ""
                     reasoning_val = f"Incomplete SDS search identity: missing required {', '.join(missing)} specification in source workbook."
-                    needs_review += 1
-                    completed_requests_count += 1
+                    if sheet_is_active:
+                        needs_review += 1
+                        completed_requests_count += 1
                     sheet_completed += 1
                 elif status_val in ['EXACT MATCH', 'BEST AVAILABLE', 'NEEDS REVIEW', 'ERROR']:
                     norm_status = status_val
-                    completed_requests_count += 1
+                    if sheet_is_active:
+                        completed_requests_count += 1
+                        if norm_status == 'EXACT MATCH':
+                            exact_matches += 1
+                        elif norm_status == 'BEST AVAILABLE':
+                            best_available += 1
+                        elif norm_status == 'NEEDS REVIEW':
+                            needs_review += 1
+                        elif norm_status == 'ERROR':
+                            errors += 1
                     sheet_completed += 1
-                    if norm_status == 'EXACT MATCH':
-                        exact_matches += 1
-                    elif norm_status == 'BEST AVAILABLE':
-                        best_available += 1
-                    elif norm_status == 'NEEDS REVIEW':
-                        needs_review += 1
-                    elif norm_status == 'ERROR':
-                        errors += 1
                 else:
                     norm_status = "PENDING"
-                    pending_requests_count += 1
+                    if sheet_is_active:
+                        pending_requests_count += 1
                     sheet_pending += 1
 
                 sheet_valid_requests += 1
                 s_no = len(normalized_requests) + 1
                 excel_row_num = r_idx + header_offset + 2
 
-                normalized_row = {
-                    '_sheet_name': sheet_name,
-                    '_excel_row': excel_row_num,
-                    '_row_index': len(normalized_requests),
-                    'S.No.': s_no,
-                    'Product': prod_val,
-                    'Product Name': prod_val,
-                    'Product Company Name': comp_val,
-                    'Company': comp_val,
-                    'Part Number': part_val,
-                    'Language': lang_val,
-                    'Country': country_val,
-                    'Found URL': found_url_val,
-                    'Status': norm_status,
-                    'Confidence': confidence_val,
-                    'Reasoning': reasoning_val
-                }
-                normalized_requests.append(normalized_row)
+                if sheet_is_active:
+                    normalized_row = {
+                        '_sheet_name': sheet_name,
+                        '_excel_row': excel_row_num,
+                        '_row_index': len(normalized_requests),
+                        'S.No.': s_no,
+                        'Product': prod_val,
+                        'Product Name': prod_val,
+                        'Product Company Name': comp_val,
+                        'Company': comp_val,
+                        'Part Number': part_val,
+                        'Language': lang_val,
+                        'Country': country_val,
+                        'Found URL': found_url_val,
+                        'Status': norm_status,
+                        'Confidence': confidence_val,
+                        'Reasoning': reasoning_val,
+                        'product_name': prod_val,
+                        'manufacturer': comp_val,
+                        'language': lang_val,
+                        'jurisdiction': country_val,
+                        'country': country_val,
+                        'part_number': part_val
+                    }
+                    normalized_requests.append(normalized_row)
 
-        classification = classify_sheet(sheet_name, list(df.columns), sheet_valid_requests, sheet_physical_rows)
+        is_selected = sheet_is_active and (sheet_valid_requests > 0)
 
         sheets_analysis.append({
             'sheet_name': sheet_name,
             'classification': classification,
-            'is_selected': sheet_valid_requests > 0,
+            'is_selected': is_selected,
             'physical_rows': sheet_physical_rows,
             'valid_requests': sheet_valid_requests,
             'pending_requests': sheet_pending,
@@ -373,6 +442,9 @@ def inspect_workbook(
             'columns': list(df.columns),
             'mapping': sheet_mapping
         })
+
+    if not global_mapping and sheet_names and sheet_names[0] in sheet_data:
+        global_mapping = dict(sheet_data[sheet_names[0]]['mapping'])
 
     total_requests_count = len(normalized_requests)
     selected_sheet_names = [s['sheet_name'] for s in sheets_analysis if s['is_selected']]

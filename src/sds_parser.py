@@ -166,6 +166,7 @@ def parse_sds_document(
         country = "Canada"
 
     url_type = "pdf" if is_pdf else "landing_page"
+    raw_snippet = full_text[:1000].strip()
 
     return SDSEvidence(
         url=url,

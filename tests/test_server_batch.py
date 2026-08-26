@@ -23,11 +23,10 @@ def test_batch_preview_default(client):
     res = client.get('/api/batch/preview')
     assert res.status_code == 200
     data = res.json()
-    assert 'file_name' in data
-    assert data['sds_requests_count'] == 10
-    assert data['sds_sheets_count'] == 1
-    assert len(data['rows']) == 10
-    assert data['rows'][0]['Product'] == 'Acetone Solution' or data['rows'][0]['Product'] == 'Acetone'
+    assert data['file_name'] is None
+    assert data['sds_requests_count'] == 0
+    assert data['sds_sheets_count'] == 0
+    assert len(data['rows']) == 0
 
 def test_sheet_classification():
     # SDS Requests sheet
