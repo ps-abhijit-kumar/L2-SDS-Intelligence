@@ -30,14 +30,15 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
 │                                                                                 │
 │   ┌──────────────────┐      ┌─────────────┐      ┌──────────────┐              │
 │   │  decide_action   │ ───► │ search_node │ ───► │  rank_node   │              │
-│   └────────┬─────────┘      └─────────────┘      └──────┬───────┘              │
+│   │ (LLM + Guards)   │      │(Model Query)│      └──────┬───────┘              │
+│   └────────┬─────────┘      └─────────────┘             │                      │
 │            ▲                                            │                      │
 │            │           ┌────────────────────────────────┘                      │
 │            │           ▼                                                       │
 │            │    ┌──────────────┐      ┌─────────────────┐                      │
 │            └─── │  fetch_node  │ ───► │  draft_decision │                      │
-│                 └──────────────┘      └────────┬────────┘                      │
-│                                                │                               │
+│                 │ (MCP Inspect)│      └────────┬────────┘                      │
+│                 └──────────────┘               │                               │
 │                                                ▼                               │
 │                                     ┌─────────────────────┐                    │
 │                                     │  verify_decision    │                    │
@@ -50,12 +51,16 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
 │            │    corrective   │                                  │extract_    │ │
 │            │    action_node  │ ───► [extract_final_node] ───►   │final_node  │ │
 │            └─────────────────┘                                  └─────┬──────┘ │
+│                                                                       │        │
 └───────────────────────────────────────────────────────────────────────┼────────┘
                                                                         │ Verified Result
                                                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                         FastMCP Excel Transport Boundary                        │
-│             (sample_requests_eval.xlsx & logs/agent_trace.jsonl)                │
+│                         FastMCP Protocol Transport Boundary                     │
+│              - MCP Tool Discovery (list_tools)                                  │
+│              - Excel Reading / Pending Requests (get_pending_requests)          │
+│              - In-Place Result Updates (update_request_status)                  │
+│              - Safe Document Inspection (inspect_sds_document)                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,40 +68,54 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
 
 ## 3. Core Architectural Components
 
-### 3.1 Dynamic Action Selection (`src/workflow.py`)
-* The agent evaluates current state, prerequisites, previous observations, and action history to dynamically select discrete actions:
-  - `SEARCH`: Formulates structured search queries combining chemical name, manufacturer, part number, and jurisdiction.
-  - `RANK`: Evaluates and scores discovered candidate URLs using deterministic multi-factor heuristics (0–100).
-  - `FETCH`: Safely downloads document streams with SSRF validation, redirect checks, and stream size caps.
-  - `DRAFT`: Synthesizes gathered evidence into a preliminary draft verdict.
-  - `VERIFY`: Executes independent reflection/verification over the draft and evidence.
-  - `RETRY`: Selects alternative candidate URLs if verification reveals insufficient evidence.
-  - `FINISH`: Validates final output with strict Pydantic schemas.
+### 3.1 Dynamic Action Selection & Agentic Search (`src/workflow.py`)
+* **LLM Policy Engine**: Analyzes request context, candidate history, fetched evidence, and previous queries to generate structured `ActionDecision`.
+* **Agentic Search Query Execution**: When the LLM chooses `SEARCH` or `RETRY`, its validated model-selected `search_query` is the exact query executed by the search mechanism.
+* **Adaptive Retry**: The LLM receives prior search queries and failed attempts to formulate distinct, adaptive queries (e.g. CAS numbers, part numbers, or relaxed company tokens) rather than repeating identical searches.
+* **Deterministic Action Prerequisite Guards**:
+  - `SEARCH`: Prerequisite: valid chemical product identity + search budget.
+  - `RANK`: Prerequisite: discovered candidates non-empty.
+  - `FETCH`: Prerequisite: unvisited candidate in discovered set.
+  - `RETRY`: Prerequisite: prior attempt exists + retry budget (`retry_count < 2`).
+  - `FINISH`: Prerequisite: valid terminal condition (evidence gathered or attempts exhausted).
 
 ### 3.2 Independent Reflection & Verification Stage
-* Programmatically and semantically cross-checks draft decisions:
-  - **Grounding Validation**: Enforces invariant `final_url in discovered_candidates AND final_url in successful_fetches`.
-  - **Authenticity Check**: Verifies presence of genuine GHS/OSHA SDS headers.
-  - **Manufacturer Match**: Detects manufacturer discrepancies and downgrades `EXACT MATCH` -> `BEST AVAILABLE` or `NEEDS REVIEW`.
+* Programmatically cross-checks draft decisions against ground truth request parameters, discovered URLs, and raw fetched document payloads:
+  - **Strict Grounding Invariant**: Both `EXACT MATCH` and `BEST AVAILABLE` strictly require non-empty grounded URLs.
+  - **Authenticity Check**: Verifies presence of standard GHS/OSHA SDS sections.
+  - **Manufacturer Match**: Cross-checks company names; downgrades `EXACT MATCH` -> `BEST AVAILABLE` or `NEEDS REVIEW` on discrepancy.
   - **Product Match**: Verifies chemical identity tokens against document text.
-  - **Part Number & CAS Match**: Confirms catalog numbers and CAS registry identifiers.
-  - **Confidence Calibration**: Ensures confidence is bounded (`0 <= confidence <= 100`) and justified by evidence.
+  - **Confidence Calibration**: Strict bounded confidence (`0 <= confidence <= 100`).
 
-### 3.3 SSRF & Network Safety Layer (`src/security.py`)
-* **Scheme Restriction**: Strictly `http` and `https` allowed; blocks `file://`, `ftp://`, `gopher://`, etc.
+### 3.3 FastMCP Tool Discovery & Protocol Boundary (`src/mcp_client.py` & `src/mcp_server.py`)
+* Standard Model Context Protocol (MCP) server over `stdio` transport.
+* **Dynamic Tool Discovery**: `SDSMCPClient` queries the server using `list_tools()` upon connection. Discovered tool definitions are verified dynamically before invocation.
+* **Tools Registered**:
+  - `get_pending_requests`: Reads target rows with automated sheet classification and semantic column mapping.
+  - `update_request_status`: Writes verified status, grounded URL, confidence, and reasoning back into Excel in-place.
+  - `inspect_sds_document`: Safely downloads and parses candidate documents behind the MCP boundary with SSRF protection.
+
+### 3.4 Multi-Dataset Workbook Ingestion (`src/workbook_utils.py`)
+* Dynamically detects multiple genuine SDS request datasets (e.g., Part1, Part2, Part3) and separates them from summary / operational tables.
+* Excludes unrelated data without hardcoded sheet names.
+* Presents detected datasets to the user; user selects ONE request set to become active, preserving row-level alignment.
+
+### 3.5 SSRF & Network Safety Layer (`src/security.py`)
+* **Scheme Restriction**: Strictly `http` and `https` allowed; blocks `file://`, `ftp://`, `gopher://`.
 * **IP Filtering**: DNS resolution verifies that resolved IP addresses do not belong to loopback (`127.0.0.0/8`, `::1`), private (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local (`169.254.0.0/16`), or cloud metadata endpoints (`169.254.169.254`, `metadata.google.internal`).
 * **Redirect Safety**: Intercepts redirect hops and re-validates each target URL against SSRF policy before connection.
 * **Stream Bounds**: Reads downloads in 64KB chunks up to a strict 10MB maximum limit.
 
-### 3.4 Multi-Page SDS Parser & Normalization (`src/sds_parser.py`)
-* Reads first 6 pages of binary PDF documents using `PyMuPDF (fitz)` or full visible HTML structures via `BeautifulSoup4`.
-* Extracts standard 16 GHS/OSHA sections, CAS numbers (`\b\d{2,7}-\d{2}-\d\b`), catalog/part numbers, revision dates, and language/jurisdiction markers.
-
-### 3.5 FastMCP Excel Storage Transport (`src/mcp_server.py` & `src/mcp_client.py`)
-* Exposes standard MCP tools over `stdio` transport using `FastMCP`:
-  - `get_pending_requests`: Reads target rows from Excel workbooks with automated sheet classification and column mapping.
-  - `update_request_status`: Writes verified status, confirmed URL, confidence score, and reasoning back into Excel in-place.
-* **Intentional Hybrid Architecture**: Excel persistence is isolated across the MCP transport boundary, while search, rank, fetch, and parser tools remain LangGraph-native for tight observation streaming and performance.
-
-### 3.6 Isolated Batch Job Management (`server.py`)
-* Replaces unsafe process-global mutable state with a thread-safe `BatchJobManager` tracking isolated jobs by `job_id` with asyncio locks.
+### 3.6 Multi-Class Benchmark Evaluation (`data/ground_truth.json` & `src/evaluation.py`)
+* Evaluates positive, negative, and ambiguous test cases spanning:
+  1. `EXACT MATCH`
+  2. `BEST AVAILABLE`
+  3. `NEEDS REVIEW`
+  4. `WRONG PRODUCT`
+  5. `WRONG MANUFACTURER`
+  6. `WRONG COUNTRY/JURISDICTION`
+  7. `WRONG LANGUAGE`
+  8. `NO SDS / NO VALID DOCUMENT`
+  9. `AMBIGUOUS CASE`
+  10. `SECURITY REJECTION`
+* Calculates non-circular metrics: status classification accuracy, URL grounding integrity, negative case handling rate, and field-level accuracy.

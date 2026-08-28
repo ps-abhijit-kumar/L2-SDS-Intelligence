@@ -1,0 +1,672 @@
+{
+  "run_id": "eval_20260828_063528_ccd79c",
+  "timestamp": "2026-08-28T06:42:35.839102+00:00",
+  "total_cases": 15,
+  "total_duration_seconds": 426.95,
+  "average_latency_seconds": 28.16,
+  "min_latency_seconds": 3.67,
+  "max_latency_seconds": 98.22,
+  "counts": {
+    "status_correct": 7,
+    "product_correct": 7,
+    "manufacturer_correct": 7,
+    "country_correct": 6,
+    "language_correct": 7,
+    "url_grounded": 8,
+    "overall_correct": 5,
+    "exact_matches_expected": 5,
+    "exact_matches_correct": 1,
+    "best_available_expected": 4,
+    "best_available_correct": 2,
+    "needs_review_expected": 6,
+    "needs_review_correct": 4
+  },
+  "metrics": {
+    "status_accuracy_pct": 46.7,
+    "exact_match_accuracy_pct": 20.0,
+    "best_available_accuracy_pct": 50.0,
+    "needs_review_accuracy_pct": 66.7,
+    "product_accuracy_pct": 46.7,
+    "manufacturer_accuracy_pct": 46.7,
+    "country_accuracy_pct": 40.0,
+    "language_accuracy_pct": 46.7,
+    "url_grounding_pct": 53.3,
+    "overall_case_accuracy_pct": 33.3
+  },
+  "results": [
+    {
+      "id": "GT_001",
+      "category": "EXACT_MATCH",
+      "product_name": "Acetone",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "179124",
+      "cas_number": "67-64-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 19.98,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "SEARCH",
+        "SEARCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 0,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:35:48.859596+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "SEARCH",
+          "SEARCH",
+          "FINISH"
+        ],
+        "executed_queries": [
+          "Sigma Aldrich 179124 acetone SDS",
+          "Sigma-Aldrich 179124 acetone 67-64-1 SDS PDF",
+          "Sigma Aldrich 179124 SDS PDF OR \"Sigma Aldrich\" 179124 acetone SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_002",
+      "category": "EXACT_MATCH",
+      "product_name": "Isopropyl Alcohol",
+      "manufacturer": "Fisher Scientific",
+      "part_number": "A416-4",
+      "cas_number": "67-63-0",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "EXACT MATCH",
+      "predicted_url": "https://www.fishersci.com/store/msds?partNumber=A4161&productDescription=2-PROPANOL+CERTIFIED+ACS+1L&vendorId=VN00033897&countryCode=US&language=en",
+      "confidence": 88,
+      "reasoning": "Verified EXACT MATCH for 'Isopropyl Alcohol' from Fisher Scientific. Identifier 67-63-0 confirmed. Direct SDS PDF document validated with authentic GHS safety sections.",
+      "latency_seconds": 15.16,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://www.fishersci.com/store/msds?partNumber=A4161&productDescription=2-PROPANOL+CERTIFIED+ACS+1L&vendorId=VN00033897&countryCode=US&language=en",
+        "url_type": "pdf",
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-28T06:36:04.335065+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "SEARCH",
+          "FETCH"
+        ],
+        "executed_queries": [
+          "Fisher Scientific Isopropyl Alcohol A416-4 SDS",
+          "Fisher Scientific \"A416-4\" Isopropyl Alcohol SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 22,
+          "manufacturer_score": 30,
+          "part_cas_score": 15,
+          "doc_type_score": 6,
+          "country_score": 5,
+          "language_score": 5,
+          "trusted_bonus": 5
+        }
+      }
+    },
+    {
+      "id": "GT_003",
+      "category": "EXACT_MATCH",
+      "product_name": "Sulfuric Acid",
+      "manufacturer": "Merck",
+      "part_number": "100731",
+      "cas_number": "7664-93-9",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 18.35,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "SEARCH",
+        "SEARCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 0,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:36:22.999822+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "SEARCH",
+          "SEARCH",
+          "FINISH"
+        ],
+        "executed_queries": [
+          "Merck 100731 sulfuric acid SDS PDF",
+          "Merck UK 100731 sulfuric acid SDS 7664-93-9 site:merckgroup.com",
+          "7664-93-9 \"Sulfuric Acid\" \"Merck\" filetype:pdf site:merckgroup.com OR site:merck.co.uk"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_004",
+      "category": "EXACT_MATCH",
+      "product_name": "Methanol",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A412-4",
+      "cas_number": "67-56-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 12.83,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "RANK",
+        "RANK",
+        "RANK",
+        "RANK",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:36:36.142330+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "RANK",
+          "RANK",
+          "RANK",
+          "RANK",
+          "FINISH"
+        ],
+        "executed_queries": [
+          "Thermo Fisher Methanol A412-4 SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_005",
+      "category": "EXACT_MATCH",
+      "product_name": "Toluene",
+      "manufacturer": "Honeywell",
+      "part_number": "34866",
+      "cas_number": "108-88-3",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 40,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 9.44,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-28T06:36:45.888711+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "executed_queries": [
+          "Honeywell 34866 Toluene SDS PDF"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_006",
+      "category": "BEST_AVAILABLE",
+      "product_name": "Hydrochloric Acid 37%",
+      "manufacturer": "Spectrum Chemical",
+      "part_number": "H1035",
+      "cas_number": "7647-01-0",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://www.labchem.com/ASSETS/DOCUMENTS/ITEMS/EN/LC14950_SDS.pdf",
+      "confidence": 70,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Hydrochloric Acid 37%'. Note: Candidate provides chemical specification but manufacturer 'Spectrum Chemical' could not be definitively confirmed.",
+      "latency_seconds": 10.43,
+      "status_correct": true,
+      "url_grounded": false,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://www.labchem.com/ASSETS/DOCUMENTS/ITEMS/EN/LC14950_SDS.pdf",
+        "url_type": "pdf",
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-28T06:36:56.627407+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH",
+          "FETCH"
+        ],
+        "executed_queries": [
+          "Spectrum Chemical H1035 Hydrochloric Acid 37% SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 20,
+          "manufacturer_score": 0,
+          "part_cas_score": 0,
+          "doc_type_score": 15,
+          "country_score": 5,
+          "language_score": 0,
+          "trusted_bonus": 0
+        }
+      }
+    },
+    {
+      "id": "GT_007",
+      "category": "BEST_AVAILABLE",
+      "product_name": "Ethanol 200 Proof",
+      "manufacturer": "Avantor",
+      "part_number": "V001",
+      "cas_number": "64-17-5",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 40,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 20.23,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-28T06:37:17.163693+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "FETCH"
+        ],
+        "executed_queries": [
+          "Avantor Ethanol 200 Proof V001 SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_008",
+      "category": "NEEDS_REVIEW",
+      "product_name": "",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "179124",
+      "cas_number": "67-64-1",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 3.67,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 0,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:37:21.151190+00:00",
+        "action_sequence": [
+          "FINISH"
+        ],
+        "executed_queries": [],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_009",
+      "category": "WRONG_PRODUCT",
+      "product_name": "Kryptonite Tetrafluoride Nonexistent Chemical",
+      "manufacturer": "Apex Specialty Chem",
+      "part_number": "NONEXIST-001",
+      "cas_number": "999999-99-9",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "ERROR",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Evaluation execution failed: Recursion limit of 20 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT",
+      "latency_seconds": 44.64,
+      "status_correct": false,
+      "url_grounded": true,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [],
+      "provenance": null
+    },
+    {
+      "id": "GT_010",
+      "category": "WRONG_MANUFACTURER",
+      "product_name": "Sodium Hydroxide",
+      "manufacturer": "FictionalBio Nonexistent Labs Global Inc",
+      "part_number": "FB-NAOH-99",
+      "cas_number": "1310-73-2",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 37.31,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "SEARCH",
+        "RANK",
+        "RANK",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:38:43.702508+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "SEARCH",
+          "RANK",
+          "RANK",
+          "FINISH"
+        ],
+        "executed_queries": [
+          "Sodium Hydroxide SDS \"FictionalBio Nonexistent Labs Global Inc\" FB-NAOH-99",
+          "Sodium Hydroxide SDS 1310-73-2 PDF"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_011",
+      "category": "WRONG_COUNTRY_JURISDICTION",
+      "product_name": "Nitric Acid",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A200-500",
+      "cas_number": "7697-37-2",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://assets.thermofisher.com/directwebviewer/private/results.aspx?page=NewSearch&LANGUAGE=d__EE&SUBFORMAT=d__CLP1&SKU=FSUN2185&PLANT=d__FSU",
+      "confidence": 75,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Nitric Acid'. Note: Jurisdiction discrepancy (destination: Antarctica Autonomous Research Zone).",
+      "latency_seconds": 30.53,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": false,
+      "language_correct": true,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "RANK",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://assets.thermofisher.com/directwebviewer/private/results.aspx?page=NewSearch&LANGUAGE=d__EE&SUBFORMAT=d__CLP1&SKU=FSUN2185&PLANT=d__FSU",
+        "url_type": "pdf",
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 1,
+        "verified_at": "2026-08-28T06:39:14.543356+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "RANK",
+          "FETCH"
+        ],
+        "executed_queries": [
+          "Thermo Fisher nitric acid 7697-37-2 SDS PDF"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 0,
+          "manufacturer_score": 30,
+          "part_cas_score": 0,
+          "doc_type_score": 6,
+          "country_score": 0,
+          "language_score": 5,
+          "trusted_bonus": 5
+        }
+      }
+    },
+    {
+      "id": "GT_012",
+      "category": "WRONG_LANGUAGE",
+      "product_name": "Benzene",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "270709",
+      "cas_number": "71-43-2",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "ERROR",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Evaluation execution failed: Recursion limit of 20 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT",
+      "latency_seconds": 47.66,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [],
+      "provenance": null
+    },
+    {
+      "id": "GT_013",
+      "category": "NO_VALID_DOCUMENT",
+      "product_name": "Unsynthesized Experimental Reagent X9999",
+      "manufacturer": "Unknown Secret Enterprise",
+      "part_number": "SEC-009",
+      "cas_number": "",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "ERROR",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Evaluation execution failed: Recursion limit of 20 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT",
+      "latency_seconds": 98.22,
+      "status_correct": false,
+      "url_grounded": true,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [],
+      "provenance": null
+    },
+    {
+      "id": "GT_014",
+      "category": "AMBIGUOUS_CASE",
+      "product_name": "Generic Hydrocarbon Mixture Unspecified",
+      "manufacturer": "Industrial Solvents Co",
+      "part_number": "",
+      "cas_number": "",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 33.11,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "SEARCH",
+        "SEARCH",
+        "SEARCH",
+        "SEARCH",
+        "SEARCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:42:14.457628+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "SEARCH",
+          "SEARCH",
+          "SEARCH",
+          "SEARCH",
+          "SEARCH",
+          "FINISH"
+        ],
+        "executed_queries": [
+          "Industrial Solvents Co hydrocarbon mixture safety data sheet",
+          "Industrial Solvents Co safety data sheet pdf",
+          "site:industrialsolvents.com \"hydrocarbon mixture\" \"safety data sheet\" pdf",
+          "\"Industrial Solvents Co\" \"safety data sheet\" filetype:pdf",
+          "\"Industrial Solvents Co\" \"hydrocarbon\" \"safety data sheet\" filetype:pdf OR site:industrialsolvents.com \"sds\" \"hydrocarbon\"",
+          "\"hydrocarbon mixture\" \"safety data sheet\" filetype:pdf"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_015",
+      "category": "SECURITY_REJECTION",
+      "product_name": "Acetone Localhost Attack Test",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "http://127.0.0.1:8000/sds.pdf",
+      "cas_number": "67-64-1",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). No conclusive safety data sheet meeting exact compliance standards was found.",
+      "latency_seconds": 20.77,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "RANK",
+        "RANK",
+        "RANK",
+        "RANK",
+        "RANK",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 0,
+        "verified_at": "2026-08-28T06:42:35.535797+00:00",
+        "action_sequence": [
+          "SEARCH",
+          "RANK",
+          "RANK",
+          "RANK",
+          "RANK",
+          "RANK",
+          "FINISH"
+        ],
+        "executed_queries": [
+          "Acetone Sigma-Aldrich SDS PDF"
+        ],
+        "ranking_sub_scores": null
+      }
+    }
+  ]
+}

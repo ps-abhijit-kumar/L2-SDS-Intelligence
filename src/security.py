@@ -1,80 +1,95 @@
-import ipaddress
 import socket
+import ipaddress
 import urllib.parse
 import urllib.request
-from typing import Tuple, Optional, Set
+import re
+from typing import Tuple, Optional, Set, List
 
-class SecurityError(Exception):
-    """Raised when a URL or network request violates security policies (SSRF, etc.)."""
-    pass
-
-# Prohibited private / reserved IP ranges
 BLOCKED_IP_NETWORKS = [
-    ipaddress.ip_network("0.0.0.0/8"),          # Current network (only valid as source address)
-    ipaddress.ip_network("10.0.0.0/8"),         # Private-Use (RFC 1918)
-    ipaddress.ip_network("100.64.0.0/10"),      # Shared Address Space (Carrier-Grade NAT)
-    ipaddress.ip_network("127.0.0.0/8"),        # Loopback (RFC 1122)
-    ipaddress.ip_network("169.254.0.0/16"),     # Link-Local (RFC 3927) - includes AWS/GCP/Azure 169.254.169.254 metadata
-    ipaddress.ip_network("172.16.0.0/12"),      # Private-Use (RFC 1918)
-    ipaddress.ip_network("192.0.0.0/24"),       # IETF Protocol Assignments
-    ipaddress.ip_network("192.0.2.0/24"),       # Documentation (TEST-NET-1)
-    ipaddress.ip_network("192.168.0.0/16"),     # Private-Use (RFC 1918)
-    ipaddress.ip_network("198.18.0.0/15"),      # Benchmarking
-    ipaddress.ip_network("198.51.100.0/24"),    # Documentation (TEST-NET-2)
-    ipaddress.ip_network("203.0.113.0/24"),     # Documentation (TEST-NET-3)
-    ipaddress.ip_network("224.0.0.0/4"),        # Multicast
-    ipaddress.ip_network("240.0.0.0/4"),        # Reserved for Future Use
-    ipaddress.ip_network("255.255.255.255/32"), # Limited Broadcast
-    # IPv6 blocked ranges
-    ipaddress.ip_network("::1/128"),            # Loopback
-    ipaddress.ip_network("fc00::/7"),           # Unique Local Address (ULA)
-    ipaddress.ip_network("fe80::/10"),          # Link-Local Unicast
+    ipaddress.ip_network('127.0.0.0/8'),        # IPv4 loopback
+    ipaddress.ip_network('10.0.0.0/8'),         # RFC 1918 Private
+    ipaddress.ip_network('172.16.0.0/12'),      # RFC 1918 Private
+    ipaddress.ip_network('192.168.0.0/16'),     # RFC 1918 Private
+    ipaddress.ip_network('169.254.0.0/16'),     # IPv4 Link-Local / Cloud Metadata (AWS/GCP/Azure)
+    ipaddress.ip_network('100.64.0.0/10'),      # Carrier-grade NAT
+    ipaddress.ip_network('192.0.0.0/24'),       # IETF Protocol Assignments
+    ipaddress.ip_network('192.0.2.0/24'),       # TEST-NET-1
+    ipaddress.ip_network('198.18.0.0/15'),      # Network Interconnect Benchmarking
+    ipaddress.ip_network('198.51.100.0/24'),    # TEST-NET-2
+    ipaddress.ip_network('203.0.113.0/24'),     # TEST-NET-3
+    ipaddress.ip_network('224.0.0.0/4'),        # Multicast
+    ipaddress.ip_network('240.0.0.0/4'),        # Reserved / Future use
+    ipaddress.ip_network('::1/128'),            # IPv6 loopback
+    ipaddress.ip_network('fc00::/7'),           # IPv6 Unique Local Address (ULA)
+    ipaddress.ip_network('fe80::/10'),          # IPv6 Link-Local
 ]
 
 BLOCKED_DOMAINS = {
-    "localhost",
-    "127.0.0.1",
-    "::1",
-    "metadata.google.internal",
-    "instance-data",
+    'localhost',
+    'localhost.localdomain',
+    '127.0.0.1',
+    'local',
+    'internal',
+    'lan',
+    'corp',
+    'home',
+    'domain.name',
+    'metadata.google.internal',
+    'instance-data',
 }
 
-BLOCKED_TLDS = {
-    ".local",
-    ".internal",
-    ".corp",
-    ".lan",
-    ".home",
-    ".localdomain"
-}
+ALLOWED_SCHEMES = {'http', 'https'}
+MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit to prevent memory exhaustion
 
-ALLOWED_SCHEMES = {"http", "https"}
-MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit (Priority 5)
+class SecurityError(Exception):
+    """Raised when an SSRF, domain bypass, or malicious request is detected."""
+    pass
 
-def is_ip_blocked(ip_addr_str: str) -> bool:
-    """Checks if an IPv4 or IPv6 address belongs to any blocked/private network."""
+def is_ip_blocked(ip_str: str) -> bool:
+    """Checks if an IP address string belongs to any private/internal/cloud metadata range."""
     try:
-        ip_obj = ipaddress.ip_address(ip_addr_str)
+        ip_obj = ipaddress.ip_address(ip_str)
         for net in BLOCKED_IP_NETWORKS:
             if ip_obj in net:
                 return True
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved or ip_obj.is_multicast:
+            return True
         return False
     except ValueError:
         return True
 
+def is_valid_url_syntax(url: str) -> bool:
+    """Validates whether a URL string has valid HTTP/HTTPS syntax and is non-empty."""
+    if not url or not isinstance(url, str):
+        return False
+    url = url.strip()
+    if len(url) < 8 or len(url) > 2048:
+        return False
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme.lower() not in ALLOWED_SCHEMES:
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        if hostname.lower() in BLOCKED_DOMAINS or "localhost" in hostname.lower() or "127.0.0.1" in hostname:
+            return False
+        if any(hostname.lower().endswith("." + suffix) for suffix in ['local', 'internal', 'lan', 'corp', 'home']):
+            return False
+        return True
+    except Exception:
+        return False
+
 def validate_url_safety(url: str) -> Tuple[str, str, int]:
     """
-    Strict SSRF validation function.
-    Resolves hostname to IP addresses and rejects:
-    - Non-http/https schemes
-    - Loopback, link-local, private, carrier NAT, or cloud metadata IP addresses
-    - Internal / local domain names
-
-    Returns: (sanitized_url, hostname, port)
-    Raises: SecurityError if URL fails validation.
+    Validates a URL against strict SSRF and security policies:
+    1. Valid HTTP/HTTPS scheme only.
+    2. Valid non-empty hostname.
+    3. Blocked domain and internal suffix checks.
+    4. DNS resolution and IP verification (IPv4/IPv6 private & cloud metadata ranges).
     """
     if not url or not isinstance(url, str):
-        raise SecurityError("URL cannot be empty.")
+        raise SecurityError("URL cannot be empty or non-string.")
 
     url = url.strip()
     try:
@@ -84,20 +99,33 @@ def validate_url_safety(url: str) -> Tuple[str, str, int]:
 
     scheme = parsed.scheme.lower()
     if scheme not in ALLOWED_SCHEMES:
-        raise SecurityError(f"Invalid URL scheme '{scheme}'. Only HTTP and HTTPS schemes are permitted.")
+        raise SecurityError(f"Invalid URL scheme '{scheme}'. Only HTTP and HTTPS are permitted.")
 
     hostname = parsed.hostname
     if not hostname:
-        raise SecurityError("Missing host in target URL.")
+        raise SecurityError("URL must contain a valid hostname.")
 
-    hostname_lower = hostname.lower()
+    hostname_clean = hostname.lower().strip()
 
-    if hostname_lower in BLOCKED_DOMAINS:
-        raise SecurityError(f"Access to blocked internal/local hostname '{hostname}' is denied.")
+    # Block direct loopback/private hostnames
+    if hostname_clean in BLOCKED_DOMAINS:
+        raise SecurityError(f"Access to blocked internal/local hostname '{hostname_clean}' is denied.")
 
-    for tld in BLOCKED_TLDS:
-        if hostname_lower.endswith(tld):
-            raise SecurityError(f"Access to blocked internal/local hostname with suffix '{tld}' is denied.")
+    # Block dotless hostnames or internal domain suffixes
+    if '.' not in hostname_clean and hostname_clean != 'localhost':
+        raise SecurityError(f"Dotless internal hostname '{hostname_clean}' is prohibited.")
+
+    blocked_suffixes = ('.local', '.internal', '.lan', '.corp', '.home', '.localdomain')
+    if any(hostname_clean.endswith(suffix) for suffix in blocked_suffixes):
+        raise SecurityError(f"Access to blocked internal/local hostname '{hostname_clean}' is denied.")
+
+    # Check if host is direct IP literal
+    try:
+        ip_obj = ipaddress.ip_address(hostname_clean)
+        if is_ip_blocked(str(ip_obj)):
+            raise SecurityError(f"Direct connection to private/internal IP literal '{ip_obj}' is denied.")
+    except ValueError:
+        pass
 
     # Resolve IP addresses for hostname
     port = parsed.port or (443 if scheme == "https" else 80)
@@ -147,9 +175,6 @@ def safe_fetch_document(
     2. Safe redirect handling (validates each hop)
     3. Stream chunking with strict size bound (10MB limit)
     4. Timeout enforcement
-
-    Returns: (raw_bytes, content_type, final_url)
-    Raises: SecurityError on policy violation, ValueError/IOError on fetch failure.
     """
     effective_max_size = max_size if max_size is not None else max_size_bytes
     safe_url, _, _ = validate_url_safety(url)
@@ -157,9 +182,17 @@ def safe_fetch_document(
     req = urllib.request.Request(
         safe_url,
         headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,application/pdf,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1"
         }
     )
 
@@ -184,7 +217,7 @@ def safe_fetch_document(
                     break
                 total_read += len(chunk)
                 if total_read > effective_max_size:
-                    raise SecurityError(f"Document size exceeded maximum size limit of {effective_max_size} bytes.")
+                    raise SecurityError(f"Document exceeded maximum size limit of {effective_max_size} bytes.")
                 chunks.append(chunk)
 
             return b"".join(chunks), content_type, final_url
@@ -192,4 +225,4 @@ def safe_fetch_document(
     except SecurityError:
         raise
     except Exception as fetch_err:
-        raise IOError(f"Network error while fetching document from '{url}': {str(fetch_err)}")
+        raise IOError(f"Failed to safely fetch document from '{url}': {str(fetch_err)}")

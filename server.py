@@ -417,6 +417,8 @@ async def run_batch_worker(
                     'successful_fetches': {},
                     'failed_fetches': {},
                     'current_candidate_url': '',
+                    'search_queries': [],
+                    'current_search_query': None,
                     'action_history': [],
                     'next_action': None,
                     'iteration_count': 0,
@@ -637,6 +639,8 @@ async def search_sds(request: SDSSearchRequest):
         'successful_fetches': {},
         'failed_fetches': {},
         'current_candidate_url': '',
+        'search_queries': [],
+        'current_search_query': None,
         'action_history': [],
         'next_action': None,
         'iteration_count': 0,
@@ -822,6 +826,7 @@ async def get_review_queue():
 
     return {
         'items': needs_review_items,
+        'total': len(needs_review_items),
         'count': len(needs_review_items)
     }
 
@@ -829,11 +834,11 @@ async def get_review_queue():
 async def get_latest_trace():
     traces = load_all_traces()
     if not traces:
-        return {'trace': [], 'message': 'No execution traces logged yet.'}
+        return {'trace': None, 'message': 'No execution traces logged yet.'}
 
     latest = traces[-1]
     normalized = normalize_trace_item(latest, len(traces) - 1)
-    return normalized
+    return {'trace': normalized}
 
 if __name__ == '__main__':
     import uvicorn

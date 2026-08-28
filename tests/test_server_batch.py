@@ -43,10 +43,17 @@ def test_sheet_classification():
     assert classify_sheet('Pivot_Table', ['Category', 'Sum'], 0, 30) == 'SUMMARY'
 
 def test_multi_sheet_with_supporting_sheets_filtering(client):
+    """
+    Verifies multi-dataset workbook upload and single request-set selection:
+    1. Upload workbook with multiple candidate SDS request datasets (Part1, Part2, Part3) + supporting + summary sheets.
+    2. Dynamic inspection detects all 3 valid request datasets without merging them into thousands of active requests.
+    3. User selects ONE request dataset (Part1 -> 20 requests).
+    4. Only the selected dataset becomes active (Active=20, Pending=20).
+    """
     wb = openpyxl.Workbook()
     wb.remove(wb.active) # remove default
 
-    # 1. Add 3 Part request sheets (20 products each = 60 valid requests)
+    # 1. Add 3 Part request sheets (20 products each = 60 potential requests across 3 distinct sets)
     for sname in ['Part1', 'Part2', 'Part3']:
         ws = wb.create_sheet(title=sname)
         headers = [
@@ -84,35 +91,44 @@ def test_multi_sheet_with_supporting_sheets_filtering(client):
     assert res.status_code == 200
     data = res.json()
 
-    # Total workbook physical rows = 60 + 100 + 10 = 170
+    # Total workbook physical rows = 60 + 100 + 10 = 170 across 5 sheets
     assert data['workbook_sheets_count'] == 5
     assert data['workbook_physical_rows'] == 170
 
-    # ONLY Part1, Part2, Part3 are SDS Request sheets
-    assert data['sds_sheets_count'] == 3
-    assert data['sds_requests_count'] == 60
-    assert data['pending_requests_count'] == 60
-    assert len(data['rows']) == 60
+    # Inspection detects all 3 valid SDS Request candidate sheets in sheets_summary
+    sds_sheets_detected = [s for s in data['sheets_summary'] if s['classification'] == 'SDS_REQUESTS']
+    assert len(sds_sheets_detected) == 3
+    for s in sds_sheets_detected:
+        assert s['valid_requests'] == 20
 
-    # Verify column mapping
+    # When multiple request datasets exist, the system requires user selection and does NOT auto-merge them
+    assert data['sds_sheets_count'] == 0
+    assert data['sds_requests_count'] == 0
+    assert len(data['rows']) == 0
+
+    # Verify column mapping auto-detected
     assert data['column_mapping']['product'] == 'Product Product Name'
     assert data['column_mapping']['company'] == 'Product Company Name'
     assert data['column_mapping']['part_number'] == 'Part Numbers'
 
-    # Test toggling to select only Part1 and Part2 (40 requests)
+    # User selects ONE request dataset (Part1 -> 20 requests)
     confirm_res = client.post('/api/batch/confirm-mapping', json={
         'product': 'Product Product Name',
         'company': 'Product Company Name',
         'part_number': 'Part Numbers',
         'language': 'Language',
         'country': 'Country',
-        'selected_sheets': ['Part1', 'Part2']
+        'selected_sheets': ['Part1']
     })
     assert confirm_res.status_code == 200
     confirm_data = confirm_res.json()
-    assert confirm_data['sds_sheets_count'] == 2
-    assert confirm_data['sds_requests_count'] == 40
-    assert len(confirm_data['rows']) == 40
+
+    # Only the selected dataset (Part1) becomes active
+    assert confirm_data['sds_sheets_count'] == 1
+    assert confirm_data['sds_requests_count'] == 20
+    assert confirm_data['pending_requests_count'] == 20
+    assert len(confirm_data['rows']) == 20
+    assert all(r['_sheet_name'] == 'Part1' for r in confirm_data['rows'])
 
     # Restore default benchmark
     res_default = client.post('/api/batch/select-default')

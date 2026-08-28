@@ -13,6 +13,27 @@ def test_sds_validation_result_valid():
     assert res.confidence == 95
     assert res.final_url.startswith("https://")
 
+def test_sds_validation_result_best_available_valid():
+    res = SDSValidationResult(
+        status="BEST AVAILABLE",
+        confidence=75,
+        detailed_reasoning="Best available SDS retrieved matching chemical profile.",
+        final_url="https://www.sigmaaldrich.com/sds/landing/179124"
+    )
+    assert res.status == "BEST AVAILABLE"
+    assert res.confidence == 75
+    assert res.final_url.startswith("https://")
+
+def test_sds_validation_result_best_available_requires_url():
+    # Enforces Phase 6: BEST AVAILABLE cannot have empty final_url
+    with pytest.raises(ValidationError):
+        SDSValidationResult(
+            status="BEST AVAILABLE",
+            confidence=70,
+            detailed_reasoning="Best available match but without URL.",
+            final_url=""
+        )
+
 def test_sds_validation_result_reject_invalid_status():
     with pytest.raises(ValidationError):
         SDSValidationResult(

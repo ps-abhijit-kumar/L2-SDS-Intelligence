@@ -6,6 +6,28 @@ import openpyxl
 from src.mcp_client import SDSMCPClient
 
 @pytest.mark.asyncio
+async def test_mcp_tool_discovery():
+    """Verifies that SDSMCPClient dynamically discovers tools from the FastMCP server via protocol."""
+    client = SDSMCPClient()
+    await client.connect()
+    try:
+        tools = await client.list_tools()
+        assert isinstance(tools, list)
+        tool_names = [t["name"] for t in tools]
+        
+        # Verify required MCP tools are discovered dynamically
+        assert "get_pending_requests" in tool_names
+        assert "update_request_status" in tool_names
+        assert "inspect_sds_document" in tool_names
+        
+        # Verify is_tool_available helper
+        assert client.is_tool_available("get_pending_requests") is True
+        assert client.is_tool_available("inspect_sds_document") is True
+        assert client.is_tool_available("non_existent_tool_xyz") is False
+    finally:
+        await client.disconnect()
+
+@pytest.mark.asyncio
 async def test_mcp_client_isolated_roundtrip():
     # Create isolated temporary Excel workbook (Priority 8: never mutate committed benchmark files)
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
@@ -74,3 +96,74 @@ async def test_mcp_inspect_sds_document_isolated():
         assert "Security Error" in data.get("error", "") or "error" in data
     finally:
         await client.disconnect()
+
+@pytest.mark.asyncio
+async def test_unregistered_mcp_tool_rejected_by_call_tool_safe():
+    """Verifies that attempting to call an un-discovered tool name raises a RuntimeError."""
+    client = SDSMCPClient()
+    await client.connect()
+    try:
+        with pytest.raises(RuntimeError) as exc_info:
+            await client.call_tool_safe("non_existent_tool_xyz123", arguments={})
+        assert "not available on MCP server" in str(exc_info.value)
+    finally:
+        await client.disconnect()
+
+def test_policy_context_formats_mcp_discovered_capabilities():
+    """Verifies that format_policy_context renders dynamic MCP tool metadata into policy observations."""
+    from src.workflow import format_policy_context
+    from unittest.mock import MagicMock
+
+    mock_client = MagicMock()
+    mock_client.discovered_tools = {
+        "inspect_sds_document": {
+            "name": "inspect_sds_document",
+            "description": "Safely retrieves and parses candidate SDS document",
+            "input_schema": {"properties": {"url": {"type": "string"}}}
+        },
+        "get_pending_requests": {
+            "name": "get_pending_requests",
+            "description": "Reads pending requests from workbook",
+            "input_schema": {"properties": {"column_mapping_json": {"type": "string"}}}
+        }
+    }
+
+    state = {
+        "row_data": {"Product Name": "Acetone", "Product Company Name": "Sigma-Aldrich"},
+        "discovered_candidates": [],
+        "ranked_candidates": [],
+        "fetched_urls": [],
+        "successful_fetches": {},
+        "failed_fetches": {},
+        "search_queries": [],
+        "action_history": [],
+        "mcp_client": mock_client
+    }
+
+    context = format_policy_context(state)
+    assert "=== DISCOVERED MCP CAPABILITIES (2) ===" in context
+    assert "inspect_sds_document" in context
+    assert "params: url" in context
+    assert "get_pending_requests" in context
+
+@pytest.mark.asyncio
+async def test_fetch_node_fails_safely_when_mcp_tool_not_discovered():
+    """Verifies that fetch_node safely halts with clear message if inspect_sds_document is not discovered."""
+    from src.workflow import fetch_node
+    from unittest.mock import MagicMock
+
+    mock_client = MagicMock()
+    mock_client.is_tool_available.return_value = False  # Tool not discovered on server
+
+    state = {
+        "current_candidate_url": "https://example.com/sample.pdf",
+        "fetched_urls": [],
+        "successful_fetches": {},
+        "failed_fetches": {},
+        "mcp_client": mock_client
+    }
+
+    result = await fetch_node(state)
+    assert "https://example.com/sample.pdf" in result["failed_fetches"]
+    assert "MCP Capability Missing" in result["failed_fetches"]["https://example.com/sample.pdf"]
+

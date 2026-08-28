@@ -77,11 +77,11 @@ class ActionDecision(BaseModel):
     )
     target_url: Optional[str] = Field(
         default=None,
-        description="Target URL if action is FETCH."
+        description="Target URL if action is FETCH or candidate-targeted RETRY."
     )
     search_query: Optional[str] = Field(
         default=None,
-        description="Target query string if action is SEARCH."
+        description="Model-selected targeted query string if action is SEARCH or query-adaptive RETRY."
     )
     retry_count: int = Field(
         default=0,
@@ -186,7 +186,7 @@ class SDSValidationResult(BaseModel):
     )
     final_url: str = Field(
         default="",
-        description="The final URL of the validated document. Must be empty string if status is 'NEEDS REVIEW' or no candidate found."
+        description="The final URL of the validated document. Must be non-empty for EXACT MATCH and BEST AVAILABLE, and empty for ungrounded NEEDS REVIEW."
     )
     url_type: Optional[Literal["pdf", "landing_page"]] = Field(
         default="pdf",
@@ -216,10 +216,12 @@ class SDSValidationResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_status_and_url_consistency(self):
-        # EXACT MATCH requires a valid URL
-        if self.status == "EXACT MATCH":
-            if not self.final_url:
-                raise ValueError("EXACT MATCH status requires a valid non-empty final_url.")
-            if self.confidence < 50:
+        # Both EXACT MATCH and BEST AVAILABLE require a grounded, non-empty final URL
+        if self.status in ["EXACT MATCH", "BEST AVAILABLE"]:
+            if not self.final_url or not str(self.final_url).strip():
+                raise ValueError(f"'{self.status}' status requires a valid non-empty grounded final_url.")
+            if self.status == "EXACT MATCH" and self.confidence < 50:
                 raise ValueError("EXACT MATCH status requires confidence >= 50.")
+            if self.status == "BEST AVAILABLE" and self.confidence < 30:
+                raise ValueError("BEST AVAILABLE status requires confidence >= 30.")
         return self

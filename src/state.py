@@ -17,7 +17,11 @@ class SDSState(TypedDict):
     failed_fetches: Dict[str, str]
     current_candidate_url: str
 
-    # Dynamic Action State (Priority 3)
+    # Agentic Search & Adaptive Retry State (Phases 2 & 3)
+    search_queries: List[str]
+    current_search_query: Optional[str]
+
+    # Dynamic Action State (Priority 3 & Phase 4)
     action_history: List[Dict[str, Any]]
     next_action: Optional[str]
     iteration_count: int
@@ -27,7 +31,7 @@ class SDSState(TypedDict):
     draft_decision: Optional[Dict[str, Any]]
     verification_result: Optional[Dict[str, Any]]
 
-    # Strict Structured Final Verdict (Priority 2)
+    # Strict Structured Final Verdict (Priority 2 & Phase 6)
     final_status: str
     final_url: str
     url_type: Optional[str]
@@ -35,5 +39,5 @@ class SDSState(TypedDict):
     detailed_reasoning: str
     provenance: Optional[Dict[str, Any]]
 
-    # MCP Client boundary integration
+    # MCP Client boundary integration (Phase 1 & 8)
     mcp_client: Optional[Any]

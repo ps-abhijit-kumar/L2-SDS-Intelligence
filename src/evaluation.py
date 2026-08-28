@@ -1,10 +1,11 @@
 import os
+import re
 import json
 import time
 import uuid
 import asyncio
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from src.workflow import create_sds_graph
@@ -20,10 +21,234 @@ def load_ground_truth() -> List[Dict[str, Any]]:
     with open(GROUND_TRUTH_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def clean_str(val: Any) -> str:
+    """Normalizes string for harmless whitespace and casing differences."""
+    if val is None:
+        return ""
+    return re.sub(r'\s+', ' ', str(val).strip()).lower()
+
+def evaluate_status(expected_status: str, actual_status: str) -> bool:
+    """
+    Strict expected-vs-actual status comparison.
+    EXACT MATCH, BEST AVAILABLE, NEEDS REVIEW, and ERROR are evaluated strictly
+    without collapsing or interchangeable scoring.
+    """
+    exp = expected_status.strip().upper()
+    act = actual_status.strip().upper()
+    return exp == act
+
+def evaluate_url_grounding(
+    expected_status: str,
+    actual_status: str,
+    actual_url: str,
+    acceptable_domains: List[str],
+    acceptable_urls: List[str]
+) -> bool:
+    """
+    Independently verifies that the returned URL satisfies ground truth domain or URL constraints.
+    - If expected_status is NEEDS REVIEW, ground truth requires no URL (empty string).
+    - If expected_status is EXACT MATCH or BEST AVAILABLE, actual_url must be an acceptable domain or exact URL.
+    - Generic keyword fallback matching (e.g. 'if sds in url') is strictly disallowed.
+    """
+    clean_url = actual_url.strip() if actual_url else ""
+    norm_exp_status = expected_status.strip().upper()
+
+    if norm_exp_status == "NEEDS REVIEW":
+        # The correct behavior for an abstained / negative / needs-review case is empty URL
+        return clean_url == ""
+
+    # For EXACT MATCH and BEST AVAILABLE, a non-empty HTTP/HTTPS URL is mandatory
+    if not clean_url or not (clean_url.startswith("http://") or clean_url.startswith("https://")):
+        return False
+
+    # Check exact acceptable URLs if specified
+    if acceptable_urls:
+        if any(clean_url.lower() == acc_u.lower().strip() for acc_u in acceptable_urls):
+            return True
+
+    # Check acceptable domains via netloc
+    if acceptable_domains:
+        try:
+            parsed = urlparse(clean_url)
+            netloc = parsed.netloc.lower().split(":")[0]
+            for domain in acceptable_domains:
+                clean_dom = domain.lower().strip()
+                if netloc == clean_dom or netloc.endswith("." + clean_dom):
+                    return True
+        except Exception:
+            return False
+
+    return False
+
+def evaluate_product(
+    expected_product: str,
+    expected_status: str,
+    actual_status: str,
+    fetched_evidence: Optional[Dict[str, Any]],
+    actual_url: str
+) -> bool:
+    """
+    Independently verifies whether the extracted/verified product matches ground truth expectation.
+    Does NOT rely on system's internal booleans (e.g. product_match=True).
+    """
+    norm_exp = clean_str(expected_product)
+    norm_exp_status = expected_status.strip().upper()
+    norm_act_status = actual_status.strip().upper()
+
+    if norm_exp_status == "NEEDS REVIEW":
+        # For negative cases (missing/invalid product), product correctness means the system properly abstained
+        return norm_act_status == "NEEDS REVIEW"
+
+    if norm_act_status == "NEEDS REVIEW":
+        return False
+
+    if not norm_exp:
+        return True
+
+    # Gather independent text from fetched evidence
+    evidence_text = ""
+    if fetched_evidence and isinstance(fetched_evidence, dict):
+        raw = str(fetched_evidence.get("raw_snippet") or "")
+        sections = " ".join(str(v) for v in (fetched_evidence.get("sections") or {}).values())
+        p_name = str(fetched_evidence.get("product_name") or "")
+        evidence_text = f"{p_name} {raw} {sections}".lower()
+
+    combined_text = f"{actual_url.lower()} {evidence_text}"
+
+    # Check token overlap
+    tokens = [t for t in re.findall(r'[a-z0-9]+', norm_exp) if len(t) > 2]
+    if not tokens:
+        return True
+
+    matched_tokens = sum(1 for t in tokens if t in combined_text)
+    match_ratio = matched_tokens / len(tokens)
+    return match_ratio >= 0.7
+
+def evaluate_manufacturer(
+    expected_manufacturer: str,
+    expected_status: str,
+    actual_status: str,
+    fetched_evidence: Optional[Dict[str, Any]],
+    actual_url: str
+) -> bool:
+    """
+    Independently verifies whether the manufacturer in retrieved evidence matches ground truth.
+    Does NOT rely on system's internal booleans (e.g. manufacturer_match=True).
+    """
+    norm_exp = clean_str(expected_manufacturer)
+    norm_exp_status = expected_status.strip().upper()
+    norm_act_status = actual_status.strip().upper()
+
+    if norm_exp_status == "NEEDS REVIEW":
+        # For negative cases (wrong/fictional manufacturer), correctness means system abstained
+        return norm_act_status == "NEEDS REVIEW"
+
+    if norm_act_status == "NEEDS REVIEW":
+        return False
+
+    if not norm_exp:
+        return True
+
+    evidence_text = ""
+    if fetched_evidence and isinstance(fetched_evidence, dict):
+        raw = str(fetched_evidence.get("raw_snippet") or "")
+        sections = " ".join(str(v) for v in (fetched_evidence.get("sections") or {}).values())
+        mfg = str(fetched_evidence.get("manufacturer") or "")
+        evidence_text = f"{mfg} {raw} {sections}".lower()
+
+    combined_text = f"{actual_url.lower()} {evidence_text}"
+
+    # Extract alphanumeric tokens from expected manufacturer
+    tokens = [t for t in re.findall(r'[a-z0-9]+', norm_exp) if len(t) > 2]
+    if not tokens:
+        return True
+
+    matched_tokens = sum(1 for t in tokens if t in combined_text)
+    match_ratio = matched_tokens / len(tokens)
+    return match_ratio >= 0.5
+
+def evaluate_country(
+    expected_country: str,
+    expected_status: str,
+    actual_status: str,
+    fetched_evidence: Optional[Dict[str, Any]]
+) -> bool:
+    """Independently verifies country / jurisdiction compliance against ground truth."""
+    norm_exp = clean_str(expected_country)
+    norm_exp_status = expected_status.strip().upper()
+    norm_act_status = actual_status.strip().upper()
+
+    if norm_exp_status == "NEEDS REVIEW":
+        return norm_act_status == "NEEDS REVIEW"
+
+    if norm_act_status == "NEEDS REVIEW":
+        return False
+
+    if not norm_exp:
+        return True
+
+    evidence_country = ""
+    evidence_text = ""
+    if fetched_evidence and isinstance(fetched_evidence, dict):
+        evidence_country = clean_str(fetched_evidence.get("country"))
+        raw = str(fetched_evidence.get("raw_snippet") or "")
+        sections = " ".join(str(v) for v in (fetched_evidence.get("sections") or {}).values())
+        evidence_text = f"{evidence_country} {raw} {sections}".lower()
+
+    if norm_exp in evidence_text or norm_exp in evidence_country:
+        return True
+
+    # Standard regional aliases
+    aliases = {
+        "united states": ["us", "usa", "osha", "ansi", "united states"],
+        "united kingdom": ["uk", "gb", "great britain", "united kingdom", "clp", "reach"],
+        "germany": ["germany", "deutschland", "de", "din", "reach", "clp"],
+        "france": ["france", "fr", "reach", "clp"],
+        "canada": ["canada", "ca", "whmis", "canadian"]
+    }
+
+    exp_aliases = aliases.get(norm_exp, [norm_exp])
+    return any(alias in evidence_text for alias in exp_aliases)
+
+def evaluate_language(
+    expected_language: str,
+    expected_status: str,
+    actual_status: str,
+    fetched_evidence: Optional[Dict[str, Any]]
+) -> bool:
+    """Independently verifies document language against ground truth."""
+    norm_exp = clean_str(expected_language)
+    norm_exp_status = expected_status.strip().upper()
+    norm_act_status = actual_status.strip().upper()
+
+    if norm_exp_status == "NEEDS REVIEW":
+        return norm_act_status == "NEEDS REVIEW"
+
+    if norm_act_status == "NEEDS REVIEW":
+        return False
+
+    if not norm_exp:
+        return True
+
+    evidence_lang = ""
+    if fetched_evidence and isinstance(fetched_evidence, dict):
+        evidence_lang = clean_str(fetched_evidence.get("language"))
+        raw = str(fetched_evidence.get("raw_snippet") or "").lower()
+        if norm_exp == "english" and any(w in raw for w in ["section", "safety data sheet", "hazard", "identification", "composition"]):
+            return True
+        if norm_exp in evidence_lang:
+            return True
+
+    return norm_exp == "english" or norm_exp in evidence_lang
+
 async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
+    """
+    Executes an independent evaluation run for a single benchmark item
+    and measures prediction correctness against independent ground truth expectation.
+    """
     req_data = {
-        "Product": item["product_name"],
-        "Product Name": item["product_name"],
+        "Product": item.get("product_name", ""),
+        "Product Name": item.get("product_name", ""),
         "Product Company Name": item.get("manufacturer", ""),
         "Company": item.get("manufacturer", ""),
         "Part Number": item.get("part_number", ""),
@@ -41,6 +266,8 @@ async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
         "successful_fetches": {},
         "failed_fetches": {},
         "current_candidate_url": "",
+        "search_queries": [],
+        "current_search_query": None,
         "action_history": [],
         "next_action": None,
         "iteration_count": 0,
@@ -51,7 +278,8 @@ async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
         "final_url": "",
         "confidence": 0,
         "detailed_reasoning": "",
-        "provenance": None
+        "provenance": None,
+        "mcp_client": None
     }
 
     start_t = time.time()
@@ -63,7 +291,7 @@ async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
         url = final_state.get("final_url", "")
         confidence = final_state.get("confidence", 0)
         reasoning = final_state.get("detailed_reasoning", "")
-        verification = final_state.get("verification_result")
+        successful_fetches = final_state.get("successful_fetches") or {}
         provenance = final_state.get("provenance")
         action_history = final_state.get("action_history", [])
 
@@ -73,42 +301,48 @@ async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
         url = ""
         confidence = 0
         reasoning = f"Evaluation execution failed: {str(e)}"
-        verification = None
+        successful_fetches = {}
         provenance = None
         action_history = []
 
+    category = item.get("category", "EXACT_MATCH")
     expected_status = item.get("expected_status", "EXACT MATCH")
-    expected_mfg = item.get("expected_manufacturer", "").lower()
-    acceptable_domains = [d.lower() for d in item.get("acceptable_domains", [])]
+    expected_product = item.get("expected_product", item.get("product_name", ""))
+    expected_mfg = item.get("expected_manufacturer", item.get("manufacturer", ""))
+    expected_country = item.get("expected_country", item.get("country", "United States"))
+    expected_language = item.get("expected_language", item.get("language", "English"))
+    acceptable_domains = item.get("acceptable_domains", [])
+    acceptable_urls = item.get("acceptable_urls", [])
 
-    status_correct = (status == expected_status) or (status in ["EXACT MATCH", "BEST AVAILABLE"] and expected_status in ["EXACT MATCH", "BEST AVAILABLE"])
+    fetched_evidence = successful_fetches.get(url) if url else None
+    if not fetched_evidence and successful_fetches:
+        fetched_evidence = next(iter(successful_fetches.values()), None)
 
-    url_correct = False
-    if url:
-        parsed_domain = urlparse(url).netloc.lower()
-        if any(acc in parsed_domain for acc in acceptable_domains):
-            url_correct = True
-        elif any(term in parsed_domain or term in url.lower() for term in ["sds", "msds", "safety", "chemical", "hazard", "pdf", "scribd"]):
-            url_correct = True
+    # Independent Metric Evaluations (Strict & Non-Circular)
+    status_correct = evaluate_status(expected_status, status)
+    url_grounded = evaluate_url_grounding(expected_status, status, url, acceptable_domains, acceptable_urls)
+    product_correct = evaluate_product(expected_product, expected_status, status, fetched_evidence, url)
+    mfg_correct = evaluate_manufacturer(expected_mfg, expected_status, status, fetched_evidence, url)
+    country_correct = evaluate_country(expected_country, expected_status, status, fetched_evidence)
+    language_correct = evaluate_language(expected_language, expected_status, status, fetched_evidence)
 
-    mfg_correct = False
-    if verification and verification.get("manufacturer_match"):
-        mfg_correct = True
-    elif url_correct or (status in ["EXACT MATCH", "BEST AVAILABLE"]):
-        mfg_correct = True
-
-    prod_correct = False
-    if verification and verification.get("product_match"):
-        prod_correct = True
-    elif status in ["EXACT MATCH", "BEST AVAILABLE"]:
-        prod_correct = True
+    # Overall case correctness requires ALL criteria to pass strictly
+    overall_correct = (
+        status_correct and
+        url_grounded and
+        product_correct and
+        mfg_correct and
+        country_correct and
+        language_correct
+    )
 
     return {
         "id": item.get("id"),
-        "product_name": item["product_name"],
-        "manufacturer": item.get("manufacturer"),
-        "part_number": item.get("part_number"),
-        "cas_number": item.get("cas_number"),
+        "category": category,
+        "product_name": item.get("product_name", ""),
+        "manufacturer": item.get("manufacturer", ""),
+        "part_number": item.get("part_number", ""),
+        "cas_number": item.get("cas_number", ""),
         "expected_status": expected_status,
         "predicted_status": status,
         "predicted_url": url,
@@ -116,10 +350,12 @@ async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
         "reasoning": reasoning,
         "latency_seconds": round(latency, 2),
         "status_correct": status_correct,
-        "url_correct": url_correct,
+        "url_grounded": url_grounded,
+        "product_correct": product_correct,
         "manufacturer_correct": mfg_correct,
-        "product_correct": prod_correct,
-        "verification_approved": bool(verification and verification.get("approved")),
+        "country_correct": country_correct,
+        "language_correct": language_correct,
+        "overall_correct": overall_correct,
         "action_sequence": [a.get("action") for a in (action_history or [])],
         "provenance": provenance
     }
@@ -129,33 +365,51 @@ async def run_evaluation_suite() -> Dict[str, Any]:
     run_id = f"eval_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:6]}"
     os.makedirs(EVAL_LOGS_DIR, exist_ok=True)
 
-    print(f"Starting benchmark evaluation [Run ID: {run_id}] over {len(ground_truth)} ground truth cases...")
+    print(f"Starting independent benchmark evaluation [Run ID: {run_id}] over {len(ground_truth)} ground truth cases...")
     graph = create_sds_graph()
 
     start_total_time = time.time()
     results = []
 
     for idx, item in enumerate(ground_truth):
-        print(f"  Evaluating [{idx + 1}/{len(ground_truth)}]: {item['product_name']} ({item['manufacturer']})...")
+        p_name = item.get('product_name') or '[Empty Product]'
+        print(f"  Evaluating [{idx + 1}/{len(ground_truth)}]: {p_name} (Category: {item.get('category')})...")
         res = await evaluate_single_item(item, graph)
         results.append(res)
         await asyncio.sleep(0.3)
 
     total_time = time.time() - start_total_time
-
     total_cases = len(results)
-    exact_matches_predicted = sum(1 for r in results if r["predicted_status"] == "EXACT MATCH")
-    best_available_predicted = sum(1 for r in results if r["predicted_status"] == "BEST AVAILABLE")
-    needs_review_predicted = sum(1 for r in results if r["predicted_status"] == "NEEDS REVIEW")
-    errors_predicted = sum(1 for r in results if r["predicted_status"] == "ERROR")
 
-    status_accuracy = sum(1 for r in results if r["status_correct"]) / total_cases * 100
-    url_accuracy = sum(1 for r in results if r["url_correct"]) / total_cases * 100
-    mfg_accuracy = sum(1 for r in results if r["manufacturer_correct"]) / total_cases * 100
-    prod_accuracy = sum(1 for r in results if r["product_correct"]) / total_cases * 100
+    # Strict Per-Class Accuracies
+    exact_matches_expected = [r for r in results if r["expected_status"] == "EXACT MATCH"]
+    best_available_expected = [r for r in results if r["expected_status"] == "BEST AVAILABLE"]
+    needs_review_expected = [r for r in results if r["expected_status"] == "NEEDS REVIEW"]
 
-    field_accuracies = [status_accuracy, url_accuracy, mfg_accuracy, prod_accuracy]
-    field_level_accuracy = sum(field_accuracies) / len(field_accuracies)
+    exact_matches_correct = sum(1 for r in exact_matches_expected if r["status_correct"])
+    best_available_correct = sum(1 for r in best_available_expected if r["status_correct"])
+    needs_review_correct = sum(1 for r in needs_review_expected if r["status_correct"])
+
+    exact_match_acc = (exact_matches_correct / len(exact_matches_expected) * 100) if exact_matches_expected else 100.0
+    best_available_acc = (best_available_correct / len(best_available_expected) * 100) if best_available_expected else 100.0
+    needs_review_acc = (needs_review_correct / len(needs_review_expected) * 100) if needs_review_expected else 100.0
+
+    # Overall Field Accuracies
+    status_correct_count = sum(1 for r in results if r["status_correct"])
+    url_grounded_count = sum(1 for r in results if r["url_grounded"])
+    prod_correct_count = sum(1 for r in results if r["product_correct"])
+    mfg_correct_count = sum(1 for r in results if r["manufacturer_correct"])
+    country_correct_count = sum(1 for r in results if r["country_correct"])
+    lang_correct_count = sum(1 for r in results if r["language_correct"])
+    overall_correct_count = sum(1 for r in results if r["overall_correct"])
+
+    status_accuracy_pct = (status_correct_count / total_cases) * 100
+    url_grounding_pct = (url_grounded_count / total_cases) * 100
+    product_accuracy_pct = (prod_correct_count / total_cases) * 100
+    mfg_accuracy_pct = (mfg_correct_count / total_cases) * 100
+    country_accuracy_pct = (country_correct_count / total_cases) * 100
+    lang_accuracy_pct = (lang_correct_count / total_cases) * 100
+    overall_accuracy_pct = (overall_correct_count / total_cases) * 100
 
     latencies = [r["latency_seconds"] for r in results]
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
@@ -170,19 +424,32 @@ async def run_evaluation_suite() -> Dict[str, Any]:
         "average_latency_seconds": round(avg_latency, 2),
         "min_latency_seconds": round(min_latency, 2),
         "max_latency_seconds": round(max_latency, 2),
-        "breakdown": {
-            "exact_matches": exact_matches_predicted,
-            "best_available": best_available_predicted,
-            "needs_review": needs_review_predicted,
-            "errors": errors_predicted
+        "counts": {
+            "status_correct": status_correct_count,
+            "product_correct": prod_correct_count,
+            "manufacturer_correct": mfg_correct_count,
+            "country_correct": country_correct_count,
+            "language_correct": lang_correct_count,
+            "url_grounded": url_grounded_count,
+            "overall_correct": overall_correct_count,
+            "exact_matches_expected": len(exact_matches_expected),
+            "exact_matches_correct": exact_matches_correct,
+            "best_available_expected": len(best_available_expected),
+            "best_available_correct": best_available_correct,
+            "needs_review_expected": len(needs_review_expected),
+            "needs_review_correct": needs_review_correct
         },
         "metrics": {
-            "status_accuracy_pct": round(status_accuracy, 1),
-            "url_correctness_pct": round(url_accuracy, 1),
-            "manufacturer_correctness_pct": round(mfg_accuracy, 1),
-            "product_correctness_pct": round(prod_accuracy, 1),
-            "overall_field_level_accuracy_pct": round(field_level_accuracy, 1),
-            "resolution_rate_pct": round(((exact_matches_predicted + best_available_predicted) / total_cases) * 100, 1)
+            "status_accuracy_pct": round(status_accuracy_pct, 1),
+            "exact_match_accuracy_pct": round(exact_match_acc, 1),
+            "best_available_accuracy_pct": round(best_available_acc, 1),
+            "needs_review_accuracy_pct": round(needs_review_acc, 1),
+            "product_accuracy_pct": round(product_accuracy_pct, 1),
+            "manufacturer_accuracy_pct": round(mfg_accuracy_pct, 1),
+            "country_accuracy_pct": round(country_accuracy_pct, 1),
+            "language_accuracy_pct": round(lang_accuracy_pct, 1),
+            "url_grounding_pct": round(url_grounding_pct, 1),
+            "overall_case_accuracy_pct": round(overall_accuracy_pct, 1)
         },
         "results": results
     }
@@ -196,37 +463,48 @@ async def run_evaluation_suite() -> Dict[str, Any]:
 
 def generate_markdown_report(eval_summary: Dict[str, Any]):
     m = eval_summary["metrics"]
-    b = eval_summary["breakdown"]
+    c = eval_summary["counts"]
 
     table_rows = []
     for r in eval_summary["results"]:
-        status_icon = "PASS" if r["status_correct"] else "DIFF"
-        url_icon = "PASS" if r["url_correct"] else ("N/A" if r["predicted_status"] == "NEEDS REVIEW" else "FAIL")
+        status_display = "PASS" if r["status_correct"] else f"FAIL ({r['predicted_status']})"
+        prod_display = "PASS" if r["product_correct"] else "FAIL"
+        mfg_display = "PASS" if r["manufacturer_correct"] else "FAIL"
+        country_display = "PASS" if r["country_correct"] else "FAIL"
+        lang_display = "PASS" if r["language_correct"] else "FAIL"
+        url_display = "GROUNDED" if r["url_grounded"] else "FAIL"
+        overall_display = "PASS" if r["overall_correct"] else "FAIL"
+
+        p_name = r['product_name'] if r['product_name'] else "*[Empty Product]*"
         table_rows.append(
-            f"| `{r['id']}` | **{r['product_name']}** | {r['manufacturer']} | `{r['expected_status']}` | `{r['predicted_status']}` | `{url_icon}` | {r['confidence']}% | {r['latency_seconds']}s |"
+            f"| `{r['id']}` | `{r['category']}` | **{p_name}** | `{r['expected_status']}` | `{r['predicted_status']}` | {prod_display} | {mfg_display} | {country_display} | {lang_display} | {url_display} | **{overall_display}** | {r['latency_seconds']}s |"
         )
 
     rows_str = "\n".join(table_rows)
 
-    report = f"""# L2 SDS Intelligence — Reproducible Benchmark Evaluation Report
+    report = f"""# L2 SDS Intelligence — Independent Benchmark Evaluation Report
 
 **Evaluation Run ID**: `{eval_summary['run_id']}`
 **Execution Timestamp**: `{eval_summary['timestamp']}`
-**Dataset**: `data/ground_truth.json` ({eval_summary['total_cases']} Benchmark Cases)
-**LangGraph Architecture**: Dynamic Action Selection + Independent Reflection Verification Stage
+**Dataset**: `data/ground_truth.json` ({eval_summary['total_cases']} Multi-Class Benchmark Cases)
+**Evaluation Method**: Strict Non-Circular Ground Truth Comparison
 
 ---
 
-## 1. Executive Performance & Correctness Metrics
+## 1. Independent Correctness & Grounding Metrics
 
-| Benchmark Metric | Result | Target Benchmark | Status |
-|---|---|---|---|
-| **Status Classification Accuracy** | **{m['status_accuracy_pct']}%** | >= 70.0% | {'PASS' if m['status_accuracy_pct'] >= 70 else 'REVIEW'} |
-| **URL Grounding Correctness** | **{m['url_correctness_pct']}%** | >= 70.0% | {'PASS' if m['url_correctness_pct'] >= 70 else 'REVIEW'} |
-| **Manufacturer Verification Rate** | **{m['manufacturer_correctness_pct']}%** | >= 80.0% | {'PASS' if m['manufacturer_correctness_pct'] >= 80 else 'REVIEW'} |
-| **Product Specification Accuracy** | **{m['product_correctness_pct']}%** | >= 85.0% | {'PASS' if m['product_correctness_pct'] >= 85 else 'REVIEW'} |
-| **Composite Field-Level Accuracy** | **{m['overall_field_level_accuracy_pct']}%** | >= 75.0% | {'PASS' if m['overall_field_level_accuracy_pct'] >= 75 else 'REVIEW'} |
-| **Automated Resolution Rate** | **{m['resolution_rate_pct']}%** | >= 60.0% | {'PASS' if m['resolution_rate_pct'] >= 60 else 'REVIEW'} |
+| Benchmark Metric | Score | Percentage |
+|---|---|---|
+| **Status Accuracy** | **{c['status_correct']}/{eval_summary['total_cases']}** | **{m['status_accuracy_pct']}%** |
+| **Exact Match Accuracy** | **{c['exact_matches_correct']}/{c['exact_matches_expected']}** | **{m['exact_match_accuracy_pct']}%** |
+| **Best Available Accuracy** | **{c['best_available_correct']}/{c['best_available_expected']}** | **{m['best_available_accuracy_pct']}%** |
+| **Needs Review / Abstention Accuracy** | **{c['needs_review_correct']}/{c['needs_review_expected']}** | **{m['needs_review_accuracy_pct']}%** |
+| **Product Verification Accuracy** | **{c['product_correct']}/{eval_summary['total_cases']}** | **{m['product_accuracy_pct']}%** |
+| **Manufacturer Verification Accuracy** | **{c['manufacturer_correct']}/{eval_summary['total_cases']}** | **{m['manufacturer_accuracy_pct']}%** |
+| **Country / Jurisdiction Accuracy** | **{c['country_correct']}/{eval_summary['total_cases']}** | **{m['country_accuracy_pct']}%** |
+| **Language Accuracy** | **{c['language_correct']}/{eval_summary['total_cases']}** | **{m['language_accuracy_pct']}%** |
+| **URL Grounding Accuracy** | **{c['url_grounded']}/{eval_summary['total_cases']}** | **{m['url_grounding_pct']}%** |
+| **Overall Case Accuracy** | **{c['overall_correct']}/{eval_summary['total_cases']}** | **{m['overall_case_accuracy_pct']}%** |
 
 ---
 
@@ -239,29 +517,20 @@ def generate_markdown_report(eval_summary: Dict[str, Any]):
 
 ---
 
-## 3. Verdict Distribution Breakdown
+## 3. Per-Item Independent Comparison Matrix
 
-* **Exact Matches (`EXACT MATCH`)**: {b['exact_matches']} ({b['exact_matches']/eval_summary['total_cases']*100:.1f}%)
-* **Best Available (`BEST AVAILABLE`)**: {b['best_available']} ({b['best_available']/eval_summary['total_cases']*100:.1f}%)
-* **Human Review Flagged (`NEEDS REVIEW`)**: {b['needs_review']} ({b['needs_review']/eval_summary['total_cases']*100:.1f}%)
-* **Pipeline Errors (`ERROR`)**: {b['errors']} ({b['errors']/eval_summary['total_cases']*100:.1f}%)
-
----
-
-## 4. Per-Item Ground Truth Comparison Matrix
-
-| Case ID | Chemical Product | Target Manufacturer | Expected Status | Verified Status | URL Grounding | Confidence | Latency |
-|---|---|---|---|---|---|---|---|
+| Case ID | Category | Chemical Product | Expected Status | Actual Status | Product | Manufacturer | Country | Language | URL Grounded | Overall | Latency |
+|---|---|---|---|---|---|---|---|---|---|---|---|
 {rows_str}
 
 ---
 
-## 5. Architectural Safeguards Verified
+## 4. Evaluation Policy & Grounding Invariants
 
-1. **Independent Reflection & Verification**: Every candidate passes through the programmatic and semantic verification node before final verdict generation.
-2. **Strict Grounding Invariant**: Zero hallucinated URLs accepted; all final URLs strictly verified against discovered search candidates and fetched payloads.
-3. **SSRF & Network Safety**: All document fetching routes are protected with DNS IP validation, blocked private CIDR checks, redirect re-validation, and 10MB chunked stream limits.
-4. **Strict Pydantic Validation**: All outputs strictly conform to `SDSValidationResult` bounds (`0 <= confidence <= 100`, bounded status literals).
+1. **Strict Status Separation**: `EXACT MATCH`, `BEST AVAILABLE`, and `NEEDS REVIEW` are strictly evaluated. No status collapsing or credit sharing.
+2. **Independent Product & Manufacturer Verification**: Evaluator compares ground truth tokens against raw fetched documents and URLs directly rather than accepting internal model claims.
+3. **Deterministic URL Grounding**: URLs must match ground truth `acceptable_domains` or `acceptable_urls`. Generic keyword matching is disallowed.
+4. **Abstention Scoring**: Negative cases (`WRONG_PRODUCT`, `WRONG_MANUFACTURER`, `SECURITY_REJECTION`, etc.) require `NEEDS REVIEW` with an empty URL to pass.
 """
 
     with open("evaluation_report.md", "w", encoding="utf-8") as f:

@@ -4,9 +4,20 @@ from src.security import (
     validate_url_safety,
     safe_fetch_document,
     SecurityError,
-    is_ip_blocked
+    is_ip_blocked,
+    is_valid_url_syntax
 )
 import ipaddress
+
+def test_is_valid_url_syntax():
+    assert is_valid_url_syntax("https://www.sigmaaldrich.com/sds/acetone.pdf") is True
+    assert is_valid_url_syntax("http://fishersci.com/doc") is True
+    assert is_valid_url_syntax("ftp://ftp.example.com") is False
+    assert is_valid_url_syntax("file:///etc/passwd") is False
+    assert is_valid_url_syntax("http://localhost:8000") is False
+    assert is_valid_url_syntax("http://127.0.0.1/admin") is False
+    assert is_valid_url_syntax("http://internal.local/sds") is False
+    assert is_valid_url_syntax("") is False
 
 def test_validate_url_safety_valid_public():
     url, host, port = validate_url_safety("https://www.google.com/search")

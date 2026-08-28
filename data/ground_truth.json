@@ -1,6 +1,7 @@
 [
   {
     "id": "GT_001",
+    "category": "EXACT_MATCH",
     "product_name": "Acetone",
     "manufacturer": "Sigma-Aldrich",
     "part_number": "179124",
@@ -8,16 +9,20 @@
     "country": "United States",
     "language": "English",
     "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Sigma-Aldrich",
     "expected_product": "Acetone",
+    "expected_manufacturer": "Sigma-Aldrich",
+    "expected_country": "United States",
+    "expected_language": "English",
     "acceptable_domains": [
       "sigmaaldrich.com",
       "merckmillipore.com"
     ],
-    "expected_evidence": "Flash point -20 C, CAS 67-64-1, solvent"
+    "acceptable_urls": [],
+    "expected_behavior_description": "Standard positive case: direct SDS PDF with authentic GHS sections from primary manufacturer."
   },
   {
     "id": "GT_002",
+    "category": "EXACT_MATCH",
     "product_name": "Isopropyl Alcohol",
     "manufacturer": "Fisher Scientific",
     "part_number": "A416-4",
@@ -25,16 +30,20 @@
     "country": "United States",
     "language": "English",
     "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Fisher Scientific",
     "expected_product": "Isopropyl Alcohol",
+    "expected_manufacturer": "Fisher Scientific",
+    "expected_country": "United States",
+    "expected_language": "English",
     "acceptable_domains": [
       "fishersci.com",
       "thermofisher.com"
     ],
-    "expected_evidence": "Isopropanol 2-propanol CAS 67-63-0"
+    "acceptable_urls": [],
+    "expected_behavior_description": "Standard positive case: authentic isopropanol SDS PDF matching product and manufacturer."
   },
   {
     "id": "GT_003",
+    "category": "EXACT_MATCH",
     "product_name": "Sulfuric Acid",
     "manufacturer": "Merck",
     "part_number": "100731",
@@ -42,16 +51,20 @@
     "country": "United Kingdom",
     "language": "English",
     "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Merck",
     "expected_product": "Sulfuric Acid",
+    "expected_manufacturer": "Merck",
+    "expected_country": "United Kingdom",
+    "expected_language": "English",
     "acceptable_domains": [
       "merckmillipore.com",
       "sigmaaldrich.com"
     ],
-    "expected_evidence": "Corrosive acid CAS 7664-93-9"
+    "acceptable_urls": [],
+    "expected_behavior_description": "Standard positive case: verified corrosive acid SDS from Merck UK portal."
   },
   {
     "id": "GT_004",
+    "category": "EXACT_MATCH",
     "product_name": "Methanol",
     "manufacturer": "Thermo Fisher",
     "part_number": "A412-4",
@@ -59,16 +72,20 @@
     "country": "United States",
     "language": "English",
     "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Thermo Fisher",
     "expected_product": "Methanol",
+    "expected_manufacturer": "Thermo Fisher",
+    "expected_country": "United States",
+    "expected_language": "English",
     "acceptable_domains": [
       "thermofisher.com",
       "fishersci.com"
     ],
-    "expected_evidence": "Methyl alcohol flammable CAS 67-56-1"
+    "acceptable_urls": [],
+    "expected_behavior_description": "Standard positive case: flammable solvent SDS PDF confirmed with manufacturer."
   },
   {
     "id": "GT_005",
+    "category": "EXACT_MATCH",
     "product_name": "Toluene",
     "manufacturer": "Honeywell",
     "part_number": "34866",
@@ -76,97 +93,209 @@
     "country": "Germany",
     "language": "English",
     "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Honeywell",
     "expected_product": "Toluene",
+    "expected_manufacturer": "Honeywell",
+    "expected_country": "Germany",
+    "expected_language": "English",
     "acceptable_domains": [
       "honeywell.com",
       "lab-honeywell.com"
     ],
-    "expected_evidence": "Methylbenzene CAS 108-88-3"
+    "acceptable_urls": [],
+    "expected_behavior_description": "Standard positive case: Honeywell European SDS PDF matching chemical identity."
   },
   {
     "id": "GT_006",
+    "category": "BEST_AVAILABLE",
+    "product_name": "Hydrochloric Acid 37%",
+    "manufacturer": "Spectrum Chemical",
+    "part_number": "H1035",
+    "cas_number": "7647-01-0",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "BEST AVAILABLE",
+    "expected_product": "Hydrochloric Acid",
+    "expected_manufacturer": "Spectrum Chemical",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [
+      "spectrumchemical.com",
+      "fishersci.com",
+      "sigmaaldrich.com"
+    ],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Best available case: chemical match with grounded URL from authorized supplier/distributor portal."
+  },
+  {
+    "id": "GT_007",
+    "category": "BEST_AVAILABLE",
+    "product_name": "Ethanol 200 Proof",
+    "manufacturer": "Avantor",
+    "part_number": "V001",
+    "cas_number": "64-17-5",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "BEST AVAILABLE",
+    "expected_product": "Ethanol",
+    "expected_manufacturer": "Avantor",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [
+      "avantorsciences.com",
+      "vwr.com",
+      "sigmaaldrich.com"
+    ],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Best available case: authentic chemical document retrieved matching chemical profile."
+  },
+  {
+    "id": "GT_008",
+    "category": "NEEDS_REVIEW",
+    "product_name": "",
+    "manufacturer": "Sigma-Aldrich",
+    "part_number": "179124",
+    "cas_number": "67-64-1",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "NEEDS REVIEW",
+    "expected_product": "",
+    "expected_manufacturer": "Sigma-Aldrich",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Incomplete identity negative case: missing required product name must immediately trigger NEEDS REVIEW without hallucination."
+  },
+  {
+    "id": "GT_009",
+    "category": "WRONG_PRODUCT",
+    "product_name": "Kryptonite Tetrafluoride Nonexistent Chemical",
+    "manufacturer": "Apex Specialty Chem",
+    "part_number": "NONEXIST-001",
+    "cas_number": "999999-99-9",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "NEEDS REVIEW",
+    "expected_product": "",
+    "expected_manufacturer": "",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Non-existent chemical negative case: system must reject candidate matches and conclude with NEEDS REVIEW."
+  },
+  {
+    "id": "GT_010",
+    "category": "WRONG_MANUFACTURER",
+    "product_name": "Sodium Hydroxide",
+    "manufacturer": "FictionalBio Nonexistent Labs Global Inc",
+    "part_number": "FB-NAOH-99",
+    "cas_number": "1310-73-2",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "NEEDS REVIEW",
+    "expected_product": "Sodium Hydroxide",
+    "expected_manufacturer": "FictionalBio",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Manufacturer discrepancy case: reflection stage must detect manufacturer mismatch and flag NEEDS REVIEW."
+  },
+  {
+    "id": "GT_011",
+    "category": "WRONG_COUNTRY_JURISDICTION",
+    "product_name": "Nitric Acid",
+    "manufacturer": "Thermo Fisher",
+    "part_number": "A200-500",
+    "cas_number": "7697-37-2",
+    "country": "Antarctica Autonomous Research Zone",
+    "language": "English",
+    "expected_status": "BEST AVAILABLE",
+    "expected_product": "Nitric Acid",
+    "expected_manufacturer": "Thermo Fisher",
+    "expected_country": "Antarctica Autonomous Research Zone",
+    "expected_language": "English",
+    "acceptable_domains": [
+      "thermofisher.com",
+      "fishersci.com"
+    ],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Jurisdiction discrepancy case: authentic chemical retrieved but destination jurisdiction differs from standard US/EU regulatory region."
+  },
+  {
+    "id": "GT_012",
+    "category": "WRONG_LANGUAGE",
     "product_name": "Benzene",
     "manufacturer": "Sigma-Aldrich",
     "part_number": "270709",
     "cas_number": "71-43-2",
     "country": "United States",
-    "language": "English",
-    "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Sigma-Aldrich",
+    "language": "Esperanto",
+    "expected_status": "BEST AVAILABLE",
     "expected_product": "Benzene",
-    "acceptable_domains": [
-      "sigmaaldrich.com",
-      "merckmillipore.com"
-    ],
-    "expected_evidence": "Carcinogen aromatic hydrocarbon CAS 71-43-2"
-  },
-  {
-    "id": "GT_007",
-    "product_name": "Hydrochloric Acid",
-    "manufacturer": "Fisher Scientific",
-    "part_number": "A144-500",
-    "cas_number": "7647-01-0",
-    "country": "United States",
-    "language": "English",
-    "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Fisher Scientific",
-    "expected_product": "Hydrochloric Acid",
-    "acceptable_domains": [
-      "fishersci.com",
-      "thermofisher.com"
-    ],
-    "expected_evidence": "Hydrogen chloride aqueous CAS 7647-01-0"
-  },
-  {
-    "id": "GT_008",
-    "product_name": "Ethanol",
-    "manufacturer": "Merck",
-    "part_number": "100983",
-    "cas_number": "64-17-5",
-    "country": "France",
-    "language": "English",
-    "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Merck",
-    "expected_product": "Ethanol",
-    "acceptable_domains": [
-      "merckmillipore.com",
-      "sigmaaldrich.com"
-    ],
-    "expected_evidence": "Ethyl alcohol CAS 64-17-5"
-  },
-  {
-    "id": "GT_009",
-    "product_name": "Nitric Acid",
-    "manufacturer": "Thermo Fisher",
-    "part_number": "A200-500",
-    "cas_number": "7697-37-2",
-    "country": "Canada",
-    "language": "English",
-    "expected_status": "EXACT MATCH",
-    "expected_manufacturer": "Thermo Fisher",
-    "expected_product": "Nitric Acid",
-    "acceptable_domains": [
-      "thermofisher.com",
-      "fishersci.com"
-    ],
-    "expected_evidence": "Strong oxidizing acid CAS 7697-37-2"
-  },
-  {
-    "id": "GT_010",
-    "product_name": "Sodium Hydroxide",
-    "manufacturer": "Sigma-Aldrich",
-    "part_number": "S5881",
-    "cas_number": "1310-73-2",
-    "country": "United States",
-    "language": "English",
-    "expected_status": "EXACT MATCH",
     "expected_manufacturer": "Sigma-Aldrich",
-    "expected_product": "Sodium Hydroxide",
+    "expected_country": "United States",
+    "expected_language": "Esperanto",
     "acceptable_domains": [
       "sigmaaldrich.com",
       "merckmillipore.com"
     ],
-    "expected_evidence": "Caustic soda base CAS 1310-73-2"
+    "acceptable_urls": [],
+    "expected_behavior_description": "Language discrepancy case: authentic chemical document retrieved but requested language is unavailable."
+  },
+  {
+    "id": "GT_013",
+    "category": "NO_VALID_DOCUMENT",
+    "product_name": "Unsynthesized Experimental Reagent X9999",
+    "manufacturer": "Unknown Secret Enterprise",
+    "part_number": "SEC-009",
+    "cas_number": "",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "NEEDS REVIEW",
+    "expected_product": "",
+    "expected_manufacturer": "",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Exhausted search negative case: queries yield no genuine SDS documents; must conclude NEEDS REVIEW."
+  },
+  {
+    "id": "GT_014",
+    "category": "AMBIGUOUS_CASE",
+    "product_name": "Generic Hydrocarbon Mixture Unspecified",
+    "manufacturer": "Industrial Solvents Co",
+    "part_number": "",
+    "cas_number": "",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "NEEDS REVIEW",
+    "expected_product": "",
+    "expected_manufacturer": "",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Ambiguous chemical formulation case: multiple conflicting products without specific CAS or catalog number."
+  },
+  {
+    "id": "GT_015",
+    "category": "SECURITY_REJECTION",
+    "product_name": "Acetone Localhost Attack Test",
+    "manufacturer": "Sigma-Aldrich",
+    "part_number": "http://127.0.0.1:8000/sds.pdf",
+    "cas_number": "67-64-1",
+    "country": "United States",
+    "language": "English",
+    "expected_status": "NEEDS REVIEW",
+    "expected_product": "Acetone",
+    "expected_manufacturer": "Sigma-Aldrich",
+    "expected_country": "United States",
+    "expected_language": "English",
+    "acceptable_domains": [],
+    "acceptable_urls": [],
+    "expected_behavior_description": "Security test case: candidate pointing to private IP or SSRF vector is rejected by security shield."
   }
 ]
