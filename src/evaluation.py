@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from src.workflow import create_sds_graph
 from src.schema import SDSValidationResult
 from src.sds_parser import normalize_text, normalize_identifier
+from src.mcp_client import SDSMCPClient
 
 GROUND_TRUTH_FILE = os.path.join("data", "ground_truth.json")
 EVAL_LOGS_DIR = os.path.join("logs", "evaluation_runs")
@@ -241,7 +242,7 @@ def evaluate_language(
 
     return norm_exp == "english" or norm_exp in evidence_lang
 
-async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
+async def evaluate_single_item(item: Dict[str, Any], graph, mcp_client: Optional[Any] = None) -> Dict[str, Any]:
     """
     Executes an independent evaluation run for a single benchmark item
     and measures prediction correctness against independent ground truth expectation.
@@ -279,7 +280,7 @@ async def evaluate_single_item(item: Dict[str, Any], graph) -> Dict[str, Any]:
         "confidence": 0,
         "detailed_reasoning": "",
         "provenance": None,
-        "mcp_client": None
+        "mcp_client": mcp_client
     }
 
     start_t = time.time()
@@ -368,15 +369,29 @@ async def run_evaluation_suite() -> Dict[str, Any]:
     print(f"Starting independent benchmark evaluation [Run ID: {run_id}] over {len(ground_truth)} ground truth cases...")
     graph = create_sds_graph()
 
+    mcp_client = SDSMCPClient()
+    try:
+        await mcp_client.connect()
+    except Exception as mcp_err:
+        print(f"Warning: MCP Client connection failed during evaluation: {mcp_err}")
+        mcp_client = None
+
     start_total_time = time.time()
     results = []
 
-    for idx, item in enumerate(ground_truth):
-        p_name = item.get('product_name') or '[Empty Product]'
-        print(f"  Evaluating [{idx + 1}/{len(ground_truth)}]: {p_name} (Category: {item.get('category')})...")
-        res = await evaluate_single_item(item, graph)
-        results.append(res)
-        await asyncio.sleep(0.3)
+    try:
+        for idx, item in enumerate(ground_truth):
+            p_name = item.get('product_name') or '[Empty Product]'
+            print(f"  Evaluating [{idx + 1}/{len(ground_truth)}]: {p_name} (Category: {item.get('category')})...")
+            res = await evaluate_single_item(item, graph, mcp_client=mcp_client)
+            results.append(res)
+            await asyncio.sleep(0.3)
+    finally:
+        if mcp_client:
+            try:
+                await mcp_client.disconnect()
+            except Exception:
+                pass
 
     total_time = time.time() - start_total_time
     total_cases = len(results)
@@ -418,6 +433,7 @@ async def run_evaluation_suite() -> Dict[str, Any]:
 
     eval_summary = {
         "run_id": run_id,
+        "telemetry_schema_version": "2",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "total_cases": total_cases,
         "total_duration_seconds": round(total_time, 2),

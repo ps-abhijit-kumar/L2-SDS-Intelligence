@@ -95,6 +95,10 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
   - `update_request_status`: Writes verified status, grounded URL, confidence, and reasoning back into Excel in-place.
   - `inspect_sds_document`: Safely downloads and parses candidate documents behind the MCP boundary with SSRF protection.
 
+#### Architectural Boundary Rationale (MCP vs. Native Operations)
+* **Why `inspect_sds_document` is MCP-mediated**: Document inspection performs untrusted external network I/O, binary PDF parsing, and arbitrary HTML extraction. Hosting this capability behind the FastMCP stdio subprocess boundary isolates the host application process, enforces strict SSRF boundary checks at the transport boundary, and prevents external payload crashes from compromising the core LangGraph agent state.
+* **Why `search_duckduckgo` & `rank_sds_candidates` remain Native**: Web search retrieval was an intentional scope decision operating as an orchestrating LangGraph node in the state graph. Candidate ranking is a pure, deterministic in-memory calculation over already-gathered search metadata requiring no external network or file I/O; placing ranking behind an MCP subprocess would incur inter-process serialization overhead with zero security or isolation benefit.
+
 ### 3.4 Multi-Dataset Workbook Ingestion (`src/workbook_utils.py`)
 * Dynamically detects multiple genuine SDS request datasets (e.g., Part1, Part2, Part3) and separates them from summary / operational tables.
 * Excludes unrelated data without hardcoded sheet names.
@@ -105,6 +109,7 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
 * **IP Filtering**: DNS resolution verifies that resolved IP addresses do not belong to loopback (`127.0.0.0/8`, `::1`), private (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local (`169.254.0.0/16`), or cloud metadata endpoints (`169.254.169.254`, `metadata.google.internal`).
 * **Redirect Safety**: Intercepts redirect hops and re-validates each target URL against SSRF policy before connection.
 * **Stream Bounds**: Reads downloads in 64KB chunks up to a strict 10MB maximum limit.
+* **DNS-Rebinding TOCTOU Risk Assessment**: Pre-flight validation screens all resolved IPs. A theoretical time-of-check to time-of-use (TOCTOU) window exists if an adversary controls authoritative DNS racing TTL expiration before connection. In this system, retrieval is scoped to verified chemical manufacturers and authorized distributor domains, rendering this a low-probability residual risk. Per-hop redirect verification in `SafeRedirectHandler` prevents post-connection domain pivoting.
 
 ### 3.6 Multi-Class Benchmark Evaluation (`data/ground_truth.json` & `src/evaluation.py`)
 * Evaluates positive, negative, and ambiguous test cases spanning:
@@ -119,3 +124,4 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
   9. `AMBIGUOUS CASE`
   10. `SECURITY REJECTION`
 * Calculates non-circular metrics: status classification accuracy, URL grounding integrity, negative case handling rate, and field-level accuracy.
+* **Evaluator Independence Methodology**: The benchmark independently re-derives correctness by comparing ground-truth token sets against raw extracted document text and strict domain netloc rules rather than trusting system boolean flags. It reuses the fetched document payload from the graph execution to avoid double network load and rate limits, maintaining strict scoring independence without redundant network overhead.

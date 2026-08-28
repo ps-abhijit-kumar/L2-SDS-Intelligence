@@ -84,10 +84,12 @@ scratch/
 backups/
 uploads/
 
+# Packages & Archives
+*.zip
+*.tar.gz
+*.tgz
+
 # Database files (preserve evaluation benchmarks)
 *.xlsx
 !sample_requests_eval.xlsx
 !sample_requests.xlsx
-
-# Runtime execution logs
-logs/agent_trace.jsonl

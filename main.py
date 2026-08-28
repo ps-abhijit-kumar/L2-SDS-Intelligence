@@ -52,6 +52,8 @@ async def run_batch():
                     "successful_fetches": {},
                     "failed_fetches": {},
                     "current_candidate_url": "",
+                    "search_queries": [],
+                    "current_search_query": None,
                     "action_history": [],
                     "next_action": None,
                     "iteration_count": 0,
@@ -62,7 +64,8 @@ async def run_batch():
                     "final_url": "",
                     "confidence": 0,
                     "detailed_reasoning": "",
-                    "provenance": None
+                    "provenance": None,
+                    "mcp_client": mcp_client
                 }
 
                 config = {"recursion_limit": 20}

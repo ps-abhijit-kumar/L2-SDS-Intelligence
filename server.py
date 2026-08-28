@@ -630,6 +630,12 @@ async def search_sds(request: SDSSearchRequest):
         'Language': request.language or 'English'
     }
 
+    mcp_client = SDSMCPClient()
+    try:
+        await mcp_client.connect()
+    except Exception as mcp_err:
+        mcp_client = None
+
     initial_state = {
         'messages': [],
         'row_data': row_data,
@@ -651,7 +657,8 @@ async def search_sds(request: SDSSearchRequest):
         'final_url': '',
         'confidence': 0,
         'detailed_reasoning': '',
-        'provenance': None
+        'provenance': None,
+        'mcp_client': mcp_client
     }
 
     try:
@@ -739,6 +746,12 @@ async def search_sds(request: SDSSearchRequest):
             timestamp=timestamp,
             trace=[]
         )
+    finally:
+        if mcp_client:
+            try:
+                await mcp_client.disconnect()
+            except Exception:
+                pass
 
 # ==============================================================================
 # Audit & History Endpoints

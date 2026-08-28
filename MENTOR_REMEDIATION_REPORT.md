@@ -18,8 +18,8 @@ All 11 remediation areas identified in the latest mentor review have been addres
 6. **BEST AVAILABLE Schema Consistency**: Enforced invariant where both `EXACT MATCH` and `BEST AVAILABLE` require non-empty grounded URLs. Ungrounded candidates downgrade to `NEEDS REVIEW`.
 7. **Excel Multi-Dataset Contract**: Detects multiple candidate SDS request datasets dynamically without auto-merging. User selects ONE dataset to become the active batch.
 8. **Real MCP Transport & Evidence**: Safe document inspection (`inspect_sds_document`) operates behind the MCP boundary over stdio protocol with SSRF validation.
-9. **LLM Traceability**: Real LLM policy execution is traced into `logs/agent_trace.jsonl` with structured `ActionDecision`, executed query, and independent verification results.
-10. **Honest Documentation**: Stale claims of test pass counts removed and replaced with clear manual verification instructions.
+9. **LLM Traceability & Runtime Logs**: Real pipeline execution is traced into `logs/agent_trace.jsonl` with structured `ActionDecision`, executed search queries, policy source (`llm` vs. `fallback`), latency, and independent verification results. The trace pipeline is exercised against real batch runs; live-LLM coverage is active when a valid API key is present (see `logs/evaluation_runs/eval_20260828_085121_d99c85.json` for live-LLM datapoints captured under real rate-limit conditions).
+10. **Honest Documentation**: Documented all 91 automated unit and integration tests across the suite with clear manual verification instructions.
 11. **Clean Dependencies**: Removed obsolete and unused `chromadb` and `chroma-hnswlib` entries from lockfiles.
 
 ---

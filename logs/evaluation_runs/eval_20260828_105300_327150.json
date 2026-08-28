@@ -1,0 +1,2114 @@
+{
+  "run_id": "eval_20260828_105300_327150",
+  "telemetry_schema_version": "2",
+  "timestamp": "2026-08-28T10:55:53.632719+00:00",
+  "total_cases": 15,
+  "total_duration_seconds": 171.49,
+  "average_latency_seconds": 11.11,
+  "min_latency_seconds": 0.01,
+  "max_latency_seconds": 27.76,
+  "counts": {
+    "status_correct": 11,
+    "product_correct": 11,
+    "manufacturer_correct": 11,
+    "country_correct": 10,
+    "language_correct": 11,
+    "url_grounded": 11,
+    "overall_correct": 10,
+    "exact_matches_expected": 5,
+    "exact_matches_correct": 2,
+    "best_available_expected": 4,
+    "best_available_correct": 3,
+    "needs_review_expected": 6,
+    "needs_review_correct": 6
+  },
+  "metrics": {
+    "status_accuracy_pct": 73.3,
+    "exact_match_accuracy_pct": 40.0,
+    "best_available_accuracy_pct": 75.0,
+    "needs_review_accuracy_pct": 100.0,
+    "product_accuracy_pct": 73.3,
+    "manufacturer_accuracy_pct": 73.3,
+    "country_accuracy_pct": 66.7,
+    "language_accuracy_pct": 73.3,
+    "url_grounding_pct": 73.3,
+    "overall_case_accuracy_pct": 66.7
+  },
+  "results": [
+    {
+      "id": "GT_001",
+      "category": "EXACT_MATCH",
+      "product_name": "Acetone",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "179124",
+      "cas_number": "67-64-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Acetone'.",
+      "latency_seconds": 27.76,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 0,
+        "failed_fetches_count": 3,
+        "failed_fetches": {
+          "https://www.sigmaaldrich.com/US/en/sds/SIGALD/32201": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/US/en/sds/SIGALD/32201': HTTP Error 429: Too Many Requests",
+          "https://www.sigmaaldrich.com/US/en/sds/sial/01378": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/US/en/sds/sial/01378': HTTP Error 429: Too Many Requests",
+          "https://riskandsafety.com/sites/default/files/Acetone+MilliporeSigma+SDS+2023.07.25.pdf": "Document inspection failed: Failed to safely fetch document from 'https://riskandsafety.com/sites/default/files/Acetone+MilliporeSigma+SDS+2023.07.25.pdf': HTTP Error 404: Not Found"
+        },
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/sds/SIGALD/32201",
+            "score": 70,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/sds/sial/01378",
+            "score": 70,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://riskandsafety.com/sites/default/files/Acetone+MilliporeSigma+SDS+2023.07.25.pdf",
+            "score": 55,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://manoa.hawaii.edu/chem/wp-content/uploads/Aldrich-Acetone-MSDS.pdf",
+            "score": 55,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "http://chemresources.chemistry.dal.ca/safety_module/msds/Acetone.pdf",
+            "score": 50,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:53:29.905073+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Acetone'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 16816.01,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Sigma-Aldrich Acetone SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:18.966415+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 70): https://www.sigmaaldrich.com/US/en/sds/SIGALD/32201",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2597.3,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/US/en/sds/SIGALD/32201",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:23.861710+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 70): https://www.sigmaaldrich.com/US/en/sds/sial/01378",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2519.65,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/US/en/sds/sial/01378",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:26.526590+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 55): https://riskandsafety.com/sites/default/files/Acetone+MilliporeSigma+SDS+2023.07.25.pdf",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2262.9,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://riskandsafety.com/sites/default/files/Acetone+MilliporeSigma+SDS+2023.07.25.pdf",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:28.921662+00:00"
+          },
+          {
+            "action": "FINISH",
+            "reason": "Candidate fetch budget reached (3 attempts). Concluding retrieval.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 0.0,
+            "llm_error": null,
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:29.902366+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Sigma-Aldrich Acetone SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_002",
+      "category": "EXACT_MATCH",
+      "product_name": "Isopropyl Alcohol",
+      "manufacturer": "Fisher Scientific",
+      "part_number": "A416-4",
+      "cas_number": "67-63-0",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "EXACT MATCH",
+      "predicted_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR38391~~PDF~~MTR~~CLP1~~EN~~2023-10-04+20:14:55~~Isopropanol~~",
+      "confidence": 98,
+      "reasoning": "Verified EXACT MATCH for 'Isopropyl Alcohol' from Fisher Scientific. Direct SDS document validated with authentic GHS safety sections.",
+      "latency_seconds": 8.14,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR38391~~PDF~~MTR~~CLP1~~EN~~2023-10-04+20:14:55~~Isopropanol~~",
+        "url_type": "pdf",
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR38391~~PDF~~MTR~~CLP1~~EN~~2023-10-04+20:14:55~~Isopropanol~~",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR32727~~PDF~~MTR~~CGV4~~EN~~2022-04-04+05:46:53~~Isopropanol~~",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=AC149320025&productDescription=ISOPROPANOL+ANHYDROUS+2.5LT&vendorId=VN00033901&countryCode=US&language=en",
+            "score": 96,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=A4594&productDescription=ISOPROPYL+ALCOHOL+4LT&vendorId=VN00033897&countryCode=US&language=en",
+            "score": 96,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.thermofisher.com/search/browse/category/us/en/80013634",
+            "score": 83,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:53:38.351321+00:00",
+        "sections_extracted": [
+          "section_1_identification",
+          "section_2_hazards",
+          "section_3_composition",
+          "section_4_first_aid",
+          "section_5_fire_fighting",
+          "section_6_accidental_release",
+          "section_7_handling_storage",
+          "section_8_exposure_controls",
+          "section_9_physical",
+          "section_10_stability_reactivity",
+          "section_11_toxicological",
+          "section_12_ecological",
+          "section_13_disposal",
+          "section_14_transport",
+          "section_15_regulatory"
+        ],
+        "product_matched": true,
+        "manufacturer_matched": true,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": null,
+        "abstention_rationale": null,
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2264.17,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Fisher Scientific Isopropyl Alcohol SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:32.475212+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 100): https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR38391~~PDF~~MTR~~CLP1~~EN~~2023-10-04+20:14:55~~Isopropanol~~",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2297.58,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR38391~~PDF~~MTR~~CLP1~~EN~~2023-10-04+20:14:55~~Isopropanol~~",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:37.654438+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Fisher Scientific Isopropyl Alcohol SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 30,
+          "manufacturer_score": 40,
+          "part_cas_score": 0,
+          "doc_type_score": 15,
+          "country_score": 5,
+          "language_score": 5,
+          "trusted_bonus": 10,
+          "aggregator_penalty": 0
+        }
+      }
+    },
+    {
+      "id": "GT_003",
+      "category": "EXACT_MATCH",
+      "product_name": "Sulfuric Acid",
+      "manufacturer": "Merck",
+      "part_number": "100731",
+      "cas_number": "7664-93-9",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Sulfuric Acid'.",
+      "latency_seconds": 14.06,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 0,
+        "failed_fetches_count": 3,
+        "failed_fetches": {
+          "https://www.merckmillipore.com/INTL/en/product/msds/MDA_CHEM-100731": "Document inspection failed: Failed to safely fetch document from 'https://www.merckmillipore.com/INTL/en/product/msds/MDA_CHEM-100731': HTTP Error 429: Too Many Requests",
+          "https://www.merckmillipore.com/INTL/en/product/Sulfuric-acid-95-970-0,MDA_CHEM-100731": "Document inspection failed: Failed to safely fetch document from 'https://www.merckmillipore.com/INTL/en/product/Sulfuric-acid-95-970-0,MDA_CHEM-100731': HTTP Error 429: Too Many Requests",
+          "https://www.sigmaaldrich.com/US/en/product/mm/100731": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/US/en/product/mm/100731': HTTP Error 429: Too Many Requests"
+        },
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.merckmillipore.com/INTL/en/product/msds/MDA_CHEM-100731",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.merckmillipore.com/INTL/en/product/Sulfuric-acid-95-970-0,MDA_CHEM-100731",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/product/mm/100731",
+            "score": 93,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://ebiz-newtest.merckmillipore.com/Web-AE-Site/en_US/-/USD/ShowDocument-File?ProductSKU=MDA_CHEM-100731&DocumentType=MSD&DocumentId=100731_SDS_NZ_EN.PDF&DocumentUID=355342965&Language=EN&Country=NZ&Origin=PDP",
+            "score": 93,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/DE/en/sds/mm/1.00731",
+            "score": 87,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:53:52.721572+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Sulfuric Acid'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "No prior search has been performed. To locate the SDS, we need to query the web for Merck's official SDS for Sulfuric Acid (CAS 7664-93-9) part number 100731, focusing on PDF documents from Merck's domain.",
+            "policy_source": "llm",
+            "policy_model": "ChatGroq:openai/gpt-oss-120b",
+            "policy_latency_ms": 3085.13,
+            "llm_error": null,
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Merck sulfuric acid 100731 SDS PDF",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:41.753601+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 100): https://www.merckmillipore.com/INTL/en/product/msds/MDA_CHEM-100731",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2206.31,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.merckmillipore.com/INTL/en/product/msds/MDA_CHEM-100731",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:47.602483+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 100): https://www.merckmillipore.com/INTL/en/product/Sulfuric-acid-95-970-0,MDA_CHEM-100731",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2212.96,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.merckmillipore.com/INTL/en/product/Sulfuric-acid-95-970-0,MDA_CHEM-100731",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:49.946102+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 93): https://www.sigmaaldrich.com/US/en/product/mm/100731",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2175.18,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/US/en/product/mm/100731",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:52.588802+00:00"
+          },
+          {
+            "action": "FINISH",
+            "reason": "Candidate fetch budget reached (3 attempts). Concluding retrieval.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 0.0,
+            "llm_error": null,
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:52.718365+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Merck sulfuric acid 100731 SDS PDF"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_004",
+      "category": "EXACT_MATCH",
+      "product_name": "Methanol",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A412-4",
+      "cas_number": "67-56-1",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "EXACT MATCH",
+      "predicted_url": "https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+      "confidence": 98,
+      "reasoning": "Verified EXACT MATCH for 'Methanol' from Thermo Fisher. Direct SDS document validated with authentic GHS safety sections.",
+      "latency_seconds": 7.99,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+        "url_type": "pdf",
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR26828~~PDF~~MTR~~CGV4~~EN~~2022-04-03+02:18:52~~Methanol~~",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=ACR26828~~PDF~~MTR~~CLP1~~EE~~2023-09-29+22:09:43~~Methanol~~",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://documents.thermofisher.com/TFS-Assets/CCG/EU/SDS/SDS_15644570_EN.pdf",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=AC423950040&productDescription=METHYL+ALCOHOL,+ACS,+99.8%+4L&vendorId=VN00033901&countryCode=US&language=en",
+            "score": 96,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:54:01.028989+00:00",
+        "sections_extracted": [
+          "section_1_identification",
+          "section_2_hazards",
+          "section_3_composition",
+          "section_4_first_aid",
+          "section_5_fire_fighting",
+          "section_6_accidental_release",
+          "section_8_exposure_controls",
+          "section_7_handling_storage",
+          "section_9_physical"
+        ],
+        "product_matched": true,
+        "manufacturer_matched": true,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": null,
+        "abstention_rationale": null,
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2234.78,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Thermo Fisher Methanol SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:55.277062+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 100): https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2532.09,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://documents.thermofisher.com/TFS-Assets/LPD/Reference-Materials/METHANOLSDS_MTR-NALT_EN.pdf",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:53:59.891349+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Thermo Fisher Methanol SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 30,
+          "manufacturer_score": 40,
+          "part_cas_score": 0,
+          "doc_type_score": 15,
+          "country_score": 5,
+          "language_score": 5,
+          "trusted_bonus": 10,
+          "aggregator_penalty": 0
+        }
+      }
+    },
+    {
+      "id": "GT_005",
+      "category": "EXACT_MATCH",
+      "product_name": "Toluene",
+      "manufacturer": "Honeywell",
+      "part_number": "34866",
+      "cas_number": "108-88-3",
+      "expected_status": "EXACT MATCH",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Toluene'.",
+      "latency_seconds": 9.91,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://lafrentz.ca/wp-content/uploads/Toluene-Honeywell.pdf",
+            "score": 65,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.co.uk/shop/products/toluene-acs-reagent-99-5-honeywell-8/15641620",
+            "score": 60,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.msds.com/msds/28458214/toluene",
+            "score": 55,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://sps-support.honeywell.com/s/article/Certificates-Datasheets-Download-From-Honeywell-Industrial-Safety-Website",
+            "score": 50,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.co.uk/store/msds?partNumber=10709434&productDescription=1LT+Toluene,+Certified+AR+for+analysis&countryCode=GB&language=en",
+            "score": 46,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:54:11.245195+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Toluene'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2210.96,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Honeywell Toluene SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:03.547959+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 65): https://lafrentz.ca/wp-content/uploads/Toluene-Honeywell.pdf",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2216.46,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://lafrentz.ca/wp-content/uploads/Toluene-Honeywell.pdf",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:09.415065+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Honeywell Toluene SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_006",
+      "category": "BEST_AVAILABLE",
+      "product_name": "Hydrochloric Acid 37%",
+      "manufacturer": "Spectrum Chemical",
+      "part_number": "H1035",
+      "cas_number": "7647-01-0",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://www.fishersci.com/store/msds?partNumber=AC450550025&productDescription=HYDROCHLORIC+ACID,+37%,+2.5LT&vendorId=VN00032119&countryCode=US&language=en",
+      "confidence": 80,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Hydrochloric Acid 37%'. Matches chemical profile with minor variant differences.",
+      "latency_seconds": 9.64,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://www.fishersci.com/store/msds?partNumber=AC450550025&productDescription=HYDROCHLORIC+ACID,+37%,+2.5LT&vendorId=VN00032119&countryCode=US&language=en",
+        "url_type": "pdf",
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=AC450550025&productDescription=HYDROCHLORIC+ACID,+37%,+2.5LT&vendorId=VN00032119&countryCode=US&language=en",
+            "score": 96,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/sds/sigald/320331?userType=anonymous",
+            "score": 92,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/shop/products/hydrochloric-acid-fcc-37-spectrum-chemical/18603184",
+            "score": 85,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/sds/mm/1.00317?userType=anonymous",
+            "score": 70,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://docs.alliancechemical.com/sds/hydrochloric-acid-37-hcl-37-technical-grade",
+            "score": 65,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:54:21.190402+00:00",
+        "sections_extracted": [
+          "section_1_identification",
+          "section_2_hazards",
+          "section_3_composition",
+          "section_4_first_aid",
+          "section_5_fire_fighting",
+          "section_6_accidental_release",
+          "section_7_handling_storage",
+          "section_8_exposure_controls",
+          "section_9_physical",
+          "section_10_stability_reactivity",
+          "section_11_toxicological",
+          "section_12_ecological",
+          "section_13_disposal",
+          "section_14_transport",
+          "section_15_regulatory",
+          "section_16_other"
+        ],
+        "product_matched": true,
+        "manufacturer_matched": true,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": null,
+        "abstention_rationale": null,
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2519.47,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Spectrum Chemical Hydrochloric Acid 37% SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:14.078142+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 96): https://www.fishersci.com/store/msds?partNumber=AC450550025&productDescription=HYDROCHLORIC+ACID,+37%,+2.5LT&vendorId=VN00032119&countryCode=US&language=en",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2240.37,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.fishersci.com/store/msds?partNumber=AC450550025&productDescription=HYDROCHLORIC+ACID,+37%,+2.5LT&vendorId=VN00032119&countryCode=US&language=en",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:19.096549+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Spectrum Chemical Hydrochloric Acid 37% SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 30,
+          "manufacturer_score": 40,
+          "part_cas_score": 0,
+          "doc_type_score": 6,
+          "country_score": 5,
+          "language_score": 5,
+          "trusted_bonus": 10,
+          "aggregator_penalty": 0
+        }
+      }
+    },
+    {
+      "id": "GT_007",
+      "category": "BEST_AVAILABLE",
+      "product_name": "Ethanol 200 Proof",
+      "manufacturer": "Avantor",
+      "part_number": "V001",
+      "cas_number": "64-17-5",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://digitalassets.avantorsciences.com/adaptivemedia/rendition?id=351d6750c4c8e72b92b4b3d52aaede73b1de4001&vid=5703b4f048ffec85522114c119a68990d29617a0&prid=original&clid=SAPDAM",
+      "confidence": 80,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Ethanol 200 Proof'. Matches chemical profile with minor variant differences.",
+      "latency_seconds": 10.98,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://digitalassets.avantorsciences.com/adaptivemedia/rendition?id=351d6750c4c8e72b92b4b3d52aaede73b1de4001&vid=5703b4f048ffec85522114c119a68990d29617a0&prid=original&clid=SAPDAM",
+        "url_type": "pdf",
+        "discovered_candidates_count": 9,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 1,
+        "failed_fetches": {
+          "https://www.sigmaaldrich.com/US/en/product/sial/459836": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/US/en/product/sial/459836': HTTP Error 429: Too Many Requests"
+        },
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/product/sial/459836",
+            "score": 98,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://digitalassets.avantorsciences.com/adaptivemedia/rendition?id=351d6750c4c8e72b92b4b3d52aaede73b1de4001&vid=5703b4f048ffec85522114c119a68990d29617a0&prid=original&clid=SAPDAM",
+            "score": 88,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.vwr.com/us/en/product/12096581/ethanol-absolute-pure-200-proof",
+            "score": 85,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.vwr.com/us/en/product/7790692/ethanol-absolute-anhydrous-995",
+            "score": 85,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.avantorsciences.com/pr/en/product/4542414/ethanol-absolute-koptec-meets-analytical-specification-of-bp-ph-eur-usp-200-proof",
+            "score": 85,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:54:32.482464+00:00",
+        "sections_extracted": [],
+        "product_matched": true,
+        "manufacturer_matched": true,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": null,
+        "abstention_rationale": null,
+        "action_sequence": [
+          "SEARCH",
+          "FETCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2236.7,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Avantor Ethanol 200 Proof SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:23.746564+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 98): https://www.sigmaaldrich.com/US/en/product/sial/459836",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2377.76,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/US/en/product/sial/459836",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:29.675168+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 88): https://digitalassets.avantorsciences.com/adaptivemedia/rendition?id=351d6750c4c8e72b92b4b3d52aaede73b1de4001&vid=5703b4f048ffec85522114c119a68990d29617a0&prid=original&clid=SAPDAM",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2201.57,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://digitalassets.avantorsciences.com/adaptivemedia/rendition?id=351d6750c4c8e72b92b4b3d52aaede73b1de4001&vid=5703b4f048ffec85522114c119a68990d29617a0&prid=original&clid=SAPDAM",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:32.000029+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Avantor Ethanol 200 Proof SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 22,
+          "manufacturer_score": 40,
+          "part_cas_score": 0,
+          "doc_type_score": 6,
+          "country_score": 5,
+          "language_score": 5,
+          "trusted_bonus": 10,
+          "aggregator_penalty": 0
+        }
+      }
+    },
+    {
+      "id": "GT_008",
+      "category": "NEEDS_REVIEW",
+      "product_name": "",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "179124",
+      "cas_number": "67-64-1",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for ''.",
+      "latency_seconds": 0.02,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 0,
+        "successful_fetches_count": 0,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:54:32.806576+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for ''.",
+        "action_sequence": [
+          "FINISH"
+        ],
+        "action_history": [
+          {
+            "action": "FINISH",
+            "reason": "Immediate abstention: missing product identity or SSRF parameter detected.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 0.0,
+            "llm_error": null,
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:32.793130+00:00"
+          }
+        ],
+        "executed_queries": [],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_009",
+      "category": "WRONG_PRODUCT",
+      "product_name": "Kryptonite Tetrafluoride Nonexistent Chemical",
+      "manufacturer": "Apex Specialty Chem",
+      "part_number": "NONEXIST-001",
+      "cas_number": "999999-99-9",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Kryptonite Tetrafluoride Nonexistent Chemical'.",
+      "latency_seconds": 12.51,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.ecolab.com/en-us/sds",
+            "score": 46,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://chemicalsafety.com/sds-search/",
+            "score": 25,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://canberracorp.com/wp-content/uploads/2024/02/F1004-001_SDS_APEX_US_en_2024-10-22.pdf",
+            "score": 25,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://advancedspecialtygases.com/wp-content/uploads/2025/02/Krypton-SDS.pdf",
+            "score": 25,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://chemicalsds.com/msds-database",
+            "score": 21,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:54:45.627689+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Kryptonite Tetrafluoride Nonexistent Chemical'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2224.79,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Apex Specialty Chem Kryptonite Tetrafluoride Nonexistent Chemical SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:35.347577+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 46): https://www.ecolab.com/en-us/sds",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2224.03,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.ecolab.com/en-us/sds",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:44.528535+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Apex Specialty Chem Kryptonite Tetrafluoride Nonexistent Chemical SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_010",
+      "category": "WRONG_MANUFACTURER",
+      "product_name": "Sodium Hydroxide",
+      "manufacturer": "FictionalBio Nonexistent Labs Global Inc",
+      "part_number": "FB-NAOH-99",
+      "cas_number": "1310-73-2",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Sodium Hydroxide'.",
+      "latency_seconds": 18.88,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 1,
+        "failed_fetches": {
+          "https://www.sigmaaldrich.com/AU/en/sds/sigald/s8045?userType=undefined": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/AU/en/sds/sigald/s8045?userType=undefined': HTTP Error 429: Too Many Requests"
+        },
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.sigmaaldrich.com/AU/en/sds/sigald/s8045?userType=undefined",
+            "score": 67,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://download.basf.com/p1/000000000030222040_SDS_GEN_US/en_US/Sod._Hydroxide_Sol._50%25_30222040_SDS_GEN_US_en_4-0.pdf",
+            "score": 63,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=BP359500&productDescription=SODIUM+HYDROXIDE+500G&vendorId=VN00033897&countryCode=US&language=en",
+            "score": 56,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.scienceinteractive.com/wp-content/uploads/2023/03/Sodium-Hydroxide.pdf",
+            "score": 55,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sciencecompany.com/msds/Sodium_Hydroxide_Solid_SDS.pdf",
+            "score": 50,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:55:04.806195+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Sodium Hydroxide'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2270.0,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "FictionalBio Nonexistent Labs Global Inc Sodium Hydroxide SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:48.205057+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 67): https://www.sigmaaldrich.com/AU/en/sds/sigald/s8045?userType=undefined",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2197.59,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/AU/en/sds/sigald/s8045?userType=undefined",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:57.241815+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 63): https://download.basf.com/p1/000000000030222040_SDS_GEN_US/en_US/Sod._Hydroxide_Sol._50%25_30222040_SDS_GEN_US_en_4-0.pdf",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2289.49,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://download.basf.com/p1/000000000030222040_SDS_GEN_US/en_US/Sod._Hydroxide_Sol._50%25_30222040_SDS_GEN_US_en_4-0.pdf",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:54:59.645573+00:00"
+          }
+        ],
+        "executed_queries": [
+          "FictionalBio Nonexistent Labs Global Inc Sodium Hydroxide SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_011",
+      "category": "WRONG_COUNTRY_JURISDICTION",
+      "product_name": "Nitric Acid",
+      "manufacturer": "Thermo Fisher",
+      "part_number": "A200-500",
+      "cas_number": "7697-37-2",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "BEST AVAILABLE",
+      "predicted_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=FSHT00309~~PDF~~MTR~~AGHS~~EN~~2021-12-24+20:48:37~~Nitric+Acid~~",
+      "confidence": 75,
+      "reasoning": "BEST AVAILABLE SDS retrieved for 'Nitric Acid'. Note: Jurisdiction discrepancy (destination: Antarctica Autonomous Research Zone).",
+      "latency_seconds": 8.89,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": false,
+      "language_correct": true,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=FSHT00309~~PDF~~MTR~~AGHS~~EN~~2021-12-24+20:48:37~~Nitric+Acid~~",
+        "url_type": "pdf",
+        "discovered_candidates_count": 7,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=FSHT00309~~PDF~~MTR~~AGHS~~EN~~2021-12-24+20:48:37~~Nitric+Acid~~",
+            "score": 100,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=AC124650010&productDescription=NITRIC+ACID,+70%,+PURE,+1LT&vendorId=VN00032119&countryCode=US&language=en",
+            "score": 91,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=AA33261K4&productDescription=NITRIC+ACID+ACS+2.5L&vendorId=VN00024248&countryCode=US&language=en",
+            "score": 91,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.thermofisher.com/search/browse/category/us/en/80013688",
+            "score": 78,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.thermofisher.com/order/catalog/product/124650025",
+            "score": 78,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:55:14.005862+00:00",
+        "sections_extracted": [
+          "section_1_identification",
+          "section_2_hazards",
+          "section_3_composition",
+          "section_4_first_aid",
+          "section_5_fire_fighting",
+          "section_6_accidental_release",
+          "section_7_handling_storage",
+          "section_8_exposure_controls",
+          "section_9_physical",
+          "section_10_stability_reactivity",
+          "section_11_toxicological",
+          "section_12_ecological",
+          "section_13_disposal",
+          "section_14_transport",
+          "section_15_regulatory",
+          "section_16_other"
+        ],
+        "product_matched": true,
+        "manufacturer_matched": true,
+        "jurisdiction_matched": false,
+        "language_matched": null,
+        "verification_issues": [
+          "Jurisdiction Discrepancy: Requested 'Antarctica Autonomous Research Zone', retrieved standard US/EU SDS."
+        ],
+        "review_category": null,
+        "abstention_rationale": null,
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2240.73,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Thermo Fisher Nitric Acid SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:07.362585+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 100): https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=FSHT00309~~PDF~~MTR~~AGHS~~EN~~2021-12-24+20:48:37~~Nitric+Acid~~",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2231.24,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://assets.thermofisher.com/DirectWebViewer/private/document.aspx?prd=FSHT00309~~PDF~~MTR~~AGHS~~EN~~2021-12-24+20:48:37~~Nitric+Acid~~",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:13.312851+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Thermo Fisher Nitric Acid SDS"
+        ],
+        "ranking_sub_scores": {
+          "product_score": 30,
+          "manufacturer_score": 40,
+          "part_cas_score": 0,
+          "doc_type_score": 15,
+          "country_score": 0,
+          "language_score": 5,
+          "trusted_bonus": 10,
+          "aggregator_penalty": 0
+        }
+      }
+    },
+    {
+      "id": "GT_012",
+      "category": "WRONG_LANGUAGE",
+      "product_name": "Benzene",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "270709",
+      "cas_number": "71-43-2",
+      "expected_status": "BEST AVAILABLE",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Benzene'.",
+      "latency_seconds": 11.84,
+      "status_correct": false,
+      "url_grounded": false,
+      "product_correct": false,
+      "manufacturer_correct": false,
+      "country_correct": false,
+      "language_correct": false,
+      "overall_correct": false,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH",
+        "FETCH",
+        "FETCH",
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 0,
+        "failed_fetches_count": 3,
+        "failed_fetches": {
+          "https://www.sigmaaldrich.com/US/en/sds/sial/401765": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/US/en/sds/sial/401765': HTTP Error 429: Too Many Requests",
+          "https://www.sigmaaldrich.com/US/en/sds/sigald/319953": "Document inspection failed: Failed to safely fetch document from 'https://www.sigmaaldrich.com/US/en/sds/sigald/319953': HTTP Error 429: Too Many Requests",
+          "https://www.merckmillipore.com/CO/en/product/BENZENE-ANHYDROUS-99.80-0,CO-401765-250ML": "Document inspection failed: Failed to safely fetch document from 'https://www.merckmillipore.com/CO/en/product/BENZENE-ANHYDROUS-99.80-0,CO-401765-250ML': HTTP Error 429: Too Many Requests"
+        },
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/sds/sial/401765",
+            "score": 87,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/sds/sigald/319953",
+            "score": 87,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.merckmillipore.com/CO/en/product/BENZENE-ANHYDROUS-99.80-0,CO-401765-250ML",
+            "score": 85,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.merckmillipore.com/INTERSHOP/web/WFS/Merck-INTL-Site/en_US/-/USD/ShowDocument-File?ProductSKU=MDA_CHEM-101783&DocumentType=MSD&Language=en&Country=en",
+            "score": 83,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://terpconnect.umd.edu/~choi/MSDS/Sigma-Aldrich/BENZENE.pdf",
+            "score": 50,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:55:26.152250+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Benzene'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH",
+          "FETCH",
+          "FETCH",
+          "FINISH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2200.7,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Sigma-Aldrich Benzene SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:16.515929+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 87): https://www.sigmaaldrich.com/US/en/sds/sial/401765",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2186.23,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/US/en/sds/sial/401765",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:21.108873+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 87): https://www.sigmaaldrich.com/US/en/sds/sigald/319953",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2327.74,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.sigmaaldrich.com/US/en/sds/sigald/319953",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:23.561855+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 85): https://www.merckmillipore.com/CO/en/product/BENZENE-ANHYDROUS-99.80-0,CO-401765-250ML",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2274.59,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.merckmillipore.com/CO/en/product/BENZENE-ANHYDROUS-99.80-0,CO-401765-250ML",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:26.047959+00:00"
+          },
+          {
+            "action": "FINISH",
+            "reason": "Candidate fetch budget reached (3 attempts). Concluding retrieval.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 0.0,
+            "llm_error": null,
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:26.147921+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Sigma-Aldrich Benzene SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_013",
+      "category": "NO_VALID_DOCUMENT",
+      "product_name": "Unsynthesized Experimental Reagent X9999",
+      "manufacturer": "Unknown Secret Enterprise",
+      "part_number": "SEC-009",
+      "cas_number": "",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Unsynthesized Experimental Reagent X9999'.",
+      "latency_seconds": 11.71,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://www.fishersci.com/us/en/customer-help-support/customer-support-search-browse/finding-safety-data-sheets.html",
+            "score": 30,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.sigmaaldrich.com/US/en/documents-search?tab=sds",
+            "score": 26,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.fishersci.com/store/msds?partNumber=A9954&productDescription=REAGENT+ALCOHOL+HPLC+4LITER&vendorId=VN00033897&countryCode=US&language=en",
+            "score": 26,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.osha.gov/laws-regs/standardinterpretations/2004-02-05-0",
+            "score": 22,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://chemicalsafety.com/sds-search/",
+            "score": 20,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:55:38.168790+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Unsynthesized Experimental Reagent X9999'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2231.93,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Unknown Secret Enterprise Unsynthesized Experimental Reagent X9999 SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:28.696345+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 30): https://www.fishersci.com/us/en/customer-help-support/customer-support-search-browse/finding-safety-data-sheets.html",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2228.33,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://www.fishersci.com/us/en/customer-help-support/customer-support-search-browse/finding-safety-data-sheets.html",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:36.621659+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Unknown Secret Enterprise Unsynthesized Experimental Reagent X9999 SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_014",
+      "category": "AMBIGUOUS_CASE",
+      "product_name": "Generic Hydrocarbon Mixture Unspecified",
+      "manufacturer": "Industrial Solvents Co",
+      "part_number": "",
+      "cas_number": "",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Generic Hydrocarbon Mixture Unspecified'.",
+      "latency_seconds": 14.25,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "SEARCH",
+        "FETCH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 10,
+        "successful_fetches_count": 1,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [
+          {
+            "url": "https://dhc-solvent.de/downloads/DHC_SDS_006_en.pdf",
+            "score": 30,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://dhc-solvent.de/downloads/DHC_SDS_008_en.pdf",
+            "score": 30,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.techinergy.com/files/industrial-solvents/MSDS_Industrial+Solvents.pdf",
+            "score": 25,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://chemicalsafety.com/sds-search/",
+            "score": 20,
+            "reasons": [],
+            "domain": null
+          },
+          {
+            "url": "https://www.msds.com/Msds/Search",
+            "score": 20,
+            "reasons": [],
+            "domain": null
+          }
+        ],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:55:52.722062+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": true,
+        "language_matched": null,
+        "verification_issues": [],
+        "review_category": "WRONG_PRODUCT",
+        "abstention_rationale": "Flagged for human compliance review (NEEDS REVIEW). Reason: No authoritative Safety Data Sheet could be retrieved for 'Generic Hydrocarbon Mixture Unspecified'.",
+        "action_sequence": [
+          "SEARCH",
+          "FETCH"
+        ],
+        "action_history": [
+          {
+            "action": "SEARCH",
+            "reason": "Initial state: initiating targeted chemical discovery search.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2535.68,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": "Industrial Solvents Co Generic Hydrocarbon Mixture Unspecified SDS",
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:41.016881+00:00"
+          },
+          {
+            "action": "FETCH",
+            "reason": "Fetching candidate URL (Score: 30): https://dhc-solvent.de/downloads/DHC_SDS_006_en.pdf",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 2540.63,
+            "llm_error": "RateLimitError",
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": "https://dhc-solvent.de/downloads/DHC_SDS_006_en.pdf",
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:51.253016+00:00"
+          }
+        ],
+        "executed_queries": [
+          "Industrial Solvents Co Generic Hydrocarbon Mixture Unspecified SDS"
+        ],
+        "ranking_sub_scores": null
+      }
+    },
+    {
+      "id": "GT_015",
+      "category": "SECURITY_REJECTION",
+      "product_name": "Acetone Localhost Attack Test",
+      "manufacturer": "Sigma-Aldrich",
+      "part_number": "http://127.0.0.1:8000/sds.pdf",
+      "cas_number": "67-64-1",
+      "expected_status": "NEEDS REVIEW",
+      "predicted_status": "NEEDS REVIEW",
+      "predicted_url": "",
+      "confidence": 0,
+      "reasoning": "Security policy rejection: SSRF address detected in input data.",
+      "latency_seconds": 0.01,
+      "status_correct": true,
+      "url_grounded": true,
+      "product_correct": true,
+      "manufacturer_correct": true,
+      "country_correct": true,
+      "language_correct": true,
+      "overall_correct": true,
+      "action_sequence": [
+        "FINISH"
+      ],
+      "provenance": {
+        "selected_url": "",
+        "url_type": null,
+        "discovered_candidates_count": 0,
+        "successful_fetches_count": 0,
+        "failed_fetches_count": 0,
+        "failed_fetches": {},
+        "discovered_candidates_summary": [],
+        "mcp_tools_discovered": [
+          "get_pending_requests",
+          "update_request_status",
+          "inspect_sds_document"
+        ],
+        "verified_at": "2026-08-28T10:55:53.043518+00:00",
+        "sections_extracted": [],
+        "product_matched": false,
+        "manufacturer_matched": false,
+        "jurisdiction_matched": false,
+        "language_matched": null,
+        "verification_issues": [
+          "Security Rejection: SSRF loopback/private address detected in request parameters."
+        ],
+        "review_category": "SECURITY_REJECTION",
+        "abstention_rationale": "Security policy rejection: SSRF address detected in input data.",
+        "action_sequence": [
+          "FINISH"
+        ],
+        "action_history": [
+          {
+            "action": "FINISH",
+            "reason": "Immediate abstention: missing product identity or SSRF parameter detected.",
+            "policy_source": "fallback",
+            "policy_model": null,
+            "policy_latency_ms": 0.0,
+            "llm_error": null,
+            "discovered_mcp_tools": [
+              "get_pending_requests",
+              "update_request_status",
+              "inspect_sds_document"
+            ],
+            "target_url": null,
+            "search_query": null,
+            "retry_count": 0,
+            "timestamp": "2026-08-28T10:55:53.039036+00:00"
+          }
+        ],
+        "executed_queries": [],
+        "ranking_sub_scores": null
+      }
+    }
+  ]
+}

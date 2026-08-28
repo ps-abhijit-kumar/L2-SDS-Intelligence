@@ -87,6 +87,15 @@ def validate_url_safety(url: str) -> Tuple[str, str, int]:
     2. Valid non-empty hostname.
     3. Blocked domain and internal suffix checks.
     4. DNS resolution and IP verification (IPv4/IPv6 private & cloud metadata ranges).
+
+    Security Note (DNS-Rebinding TOCTOU Assessment):
+    Pre-flight DNS validation inspects all resolved IP addresses against RFC 1918, link-local,
+    and cloud metadata ranges. A theoretical time-of-check to time-of-use (TOCTOU) DNS-rebinding
+    window exists if an attacker controls a custom authoritative DNS server racing TTL expirations
+    between pre-flight check and urllib connection. In production, SDS retrieval operates exclusively
+    over well-known manufacturer and authorized distributor domains, making this an accepted,
+    low-probability residual risk. Per-hop redirect re-validation via SafeRedirectHandler further
+    mitigates post-connection pivoting.
     """
     if not url or not isinstance(url, str):
         raise SecurityError("URL cannot be empty or non-string.")
