@@ -1,3 +1,17 @@
+/**
+ * System Command Center Dashboard Page
+ * ====================================
+ * Architecture Role:
+ *   Central operational view presenting real-time system status, aggregated KPIs,
+ *   retrieval success rates, subsystem telemetry, and recent chemical verification activity.
+ *
+ * Integrated Components:
+ *   - KpiGrid: High-level metrics (Total Requests, Exact Matches, Grounding Rate, Latency).
+ *   - SystemStatusCard: Backend API, Groq LLM, FastMCP server, and database health.
+ *   - PerformanceChart: Verification outcome distribution.
+ *   - RecentActivityTable: Live feed of recently verified chemical requests.
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, Search, Sparkles, ShieldCheck, ArrowRight, Activity, Plus } from 'lucide-react';

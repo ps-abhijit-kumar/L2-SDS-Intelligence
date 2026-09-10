@@ -1,3 +1,20 @@
+/**
+ * Interactive Single SDS Search Page
+ * ==================================
+ * Architecture Role:
+ *   Provides an interactive search workbench enabling compliance specialists to look up
+ *   individual chemical substances, inspect the real-time agent processing timeline,
+ *   review extracted GHS section evidence, and preview validated SDS PDFs in-situ.
+ *
+ * Integrated Components:
+ *   - SearchForm: 4-field chemical search inputs (Product, Manufacturer, Country, Language).
+ *   - AgentProcessingTimeline: Visual step-by-step progress through LangGraph nodes.
+ *   - SearchResultCard: Verdict badge, grounded confidence gauge, and citation links.
+ *   - EvidenceSection: Structured display of extracted GHS sections and CAS numbers.
+ *   - DocumentViewerModal: Embedded PDF viewer with safe download link.
+ *   - ExecutionTraceViewer: Deep diagnostic inspection of agent decisions and tool outputs.
+ */
+
 import React, { useState } from 'react';
 import { SearchForm } from '../components/search/SearchForm';
 import { AgentProcessingTimeline } from '../components/search/AgentProcessingTimeline';

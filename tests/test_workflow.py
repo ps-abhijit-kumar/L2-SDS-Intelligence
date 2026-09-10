@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from src.workflow import (
+from src.agent.workflow import (
     create_sds_graph,
     decide_action_node,
     search_node,
@@ -14,8 +14,8 @@ from src.workflow import (
     validate_search_query,
     generate_adaptive_query
 )
-from src.schema import ActionDecision
-from src.state import SDSState
+from src.core.schema import ActionDecision
+from src.core.state import SDSState
 
 def test_graph_compilation():
     graph = create_sds_graph()
@@ -152,7 +152,7 @@ def test_model_selected_search_query_passed_to_search():
         "mcp_client": None
     }
 
-    with patch("src.workflow.search_duckduckgo") as mock_search_tool:
+    with patch("src.agent.workflow.search_duckduckgo") as mock_search_tool:
         mock_search_tool.invoke.return_value = [
             {"url": "https://www.sigmaaldrich.com/US/en/sds/179124.pdf", "title": "Acetone SDS", "body": "Safety Data Sheet"}
         ]
@@ -855,7 +855,7 @@ def test_incomplete_sparse_sds_evidence_rejected_to_needs_review():
 
 def test_final_verdict_retains_enriched_evidence_provenance():
     """extract_final_node populates comprehensive evidence provenance in final state."""
-    from src.workflow import extract_final_node
+    from src.agent.workflow import extract_final_node
 
     state = {
         "row_data": {"Product Name": "Acetone", "Product Company Name": "Sigma-Aldrich"},
@@ -894,7 +894,7 @@ def test_final_verdict_retains_enriched_evidence_provenance():
 
 def test_needs_review_classification_in_provenance():
     """extract_final_node classifies review category for human compliance review."""
-    from src.workflow import extract_final_node
+    from src.agent.workflow import extract_final_node
 
     state = {
         "row_data": {"Product Name": "Acetone", "Product Company Name": "Sigma-Aldrich"},
@@ -940,7 +940,7 @@ def test_exhausted_retries_abstains_to_needs_review_with_empty_url():
 
 def test_ssrf_injection_rejection_abstains_with_security_category():
     """SSRF injection in input parameters produces immediate FINISH and SECURITY_REJECTION provenance."""
-    from src.workflow import extract_final_node
+    from src.agent.workflow import extract_final_node
 
     state = {
         "messages": [],

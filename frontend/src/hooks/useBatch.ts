@@ -1,3 +1,16 @@
+/**
+ * Batch Processing State Management Hooks
+ * =======================================
+ * Architecture Role:
+ *   Encapsulates React Query queries and mutations for the batch spreadsheet workflow:
+ *   - useBatchPreview: Loads and caches workbook preview data and sheet classification.
+ *   - useBatchStatus: Polls real-time batch execution state every 1.5s while active.
+ *   - useStartBatch: Triggers asynchronous batch execution and invalidates downstream caches.
+ *   - useUploadBatch: Manages Excel file uploads to the backend.
+ *   - useConfirmMapping: Persists confirmed column-to-field mappings and active sheet selection.
+ *   - useResetBatch: Clears current batch job state and resets the workspace.
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { BatchPreviewResponse, BatchStatusResponse, ColumnMapping } from '../types/sds';

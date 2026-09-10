@@ -1,3 +1,18 @@
+/**
+ * Frontend API Service Layer
+ * ===========================
+ * Architecture Role:
+ *   Centralized HTTP client managing communication between the React/TypeScript UI
+ *   and the FastAPI backend endpoints (/api/*).
+ *
+ * Capabilities:
+ *   - Health & Telemetry: Real-time backend system status and LLM connectivity checks.
+ *   - Interactive Search: Direct single-query chemical SDS retrieval and verification.
+ *   - Multi-Sheet Batch Management: Workbook upload, sheet inspection, mapping confirmation,
+ *     batch job dispatch, polling, and verified Excel file export.
+ *   - Audit & History: Historical trace queries, review queue fetching, and live agent telemetry.
+ */
+
 import {
   SDSSearchRequest,
   SDSSearchResponse,

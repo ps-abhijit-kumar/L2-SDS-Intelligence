@@ -1,10 +1,41 @@
+"""
+Chemical SDS Document Parser & Entity Extraction
+================================================
+Architecture Role:
+    Provides robust parsing, content-type verification, and entity extraction
+    for candidate Safety Data Sheet documents in both binary PDF and HTML formats.
+
+Key Capabilities:
+    1. Multi-Format Text Extraction:
+       - PDF Extraction: Employs PyMuPDF (fitz) with bounded page reading (default up to 10 pages)
+         to extract clean text layers without excessive memory allocation.
+       - HTML Parsing: Employs BeautifulSoup, decomposing navigational, styling, header, and footer
+         tags to isolate genuine product/hazard text.
+    2. GHS / OSHA 16-Section Segmentation (extract_sds_sections):
+       Identifies standard hazard communication section headers (Sections 1 through 16),
+       segmenting Section 1 (Identification), Section 2 (Hazards), Section 3 (Composition),
+       and Section 15 (Regulatory) into bounded text chunks for downstream verification.
+    3. Chemical Entity & Synonym Matching (is_chemical_name_match):
+       Cross-references an extensive chemical synonym map (e.g. acetone <-> 2-propanone <-> dimethyl ketone)
+       and strips commercial grade qualifiers ('reagent', 'anhydrous', '200 proof', '37%')
+       via `extract_base_chemical_tokens` to prevent false mismatches.
+    4. Deterministic Language & Jurisdiction Classification:
+       - detect_document_language: Matches authentic multi-lingual SDS terms (English, German,
+         French, Spanish, Italian, Dutch).
+       - detect_document_jurisdiction: Detects regulatory authority references (OSHA/HCS 2012 for US,
+         WHMIS for Canada, UK REACH/COSHH for UK, REACH/CLP/ECHA for EU).
+    5. %PDF Magic Byte Validation (is_pdf_content):
+       Inspects initial binary bytes for '%PDF' header marker, ensuring robust type detection
+       regardless of misleading HTTP Content-Type headers or URL query string extensions.
+"""
+
 import re
 import urllib.parse
 from typing import Dict, List, Optional, Tuple, Any, Set
 import pymupdf as fitz
 from bs4 import BeautifulSoup
 
-from src.schema import SDSEvidence
+from src.core.schema import SDSEvidence
 
 CAS_REGEX = re.compile(r'\b[1-9]\d{1,6}-\d{2}-\d\b')
 DATE_REGEX = re.compile(
@@ -23,7 +54,7 @@ PRODUCT_NAME_PATTERNS = [
 ]
 
 MANUFACTURER_PATTERNS = [
-    re.compile(r'(?:1\.3\s*(?:details\s*of\s*the\s*supplier|supplier)|manufacturer|supplier|company\s*name|produced\s*by|distributed\s*by)[:\s]*([^\n\r;]{3,100})', re.IGNORECASE),
+    re.compile(r'(?:1\.3\s*(?:details\s*of\s*the\s*supplier|supplier)|manufacturer|supplier|company(?:\s*name)?(?!\s*information)|brand|produced\s*by|distributed\s*by)[:\s]+([A-Za-z0-9][^\n\r;]{2,80})', re.IGNORECASE),
     re.compile(r'(?:supplier\s*address|distributor)[:\s]*([^\n\r;]{3,100})', re.IGNORECASE)
 ]
 
@@ -54,7 +85,65 @@ CHEMICAL_SYNONYMS: Dict[str, List[str]] = {
     "nitric acid": ["nitric acid", "aqua fortis", "hydrogen nitrate", "nitryl hydroxide", "spirit of nitre"],
     "toluene": ["toluene", "methylbenzene", "toluol", "phenylmethane", "tolu-sol", "methacide"],
     "benzene": ["benzene", "benzol", "cyclohexatriene", "coal naphtha", "phenyl hydride"],
-    "sodium hydroxide": ["sodium hydroxide", "caustic soda", "lye", "sodium hydrate", "white caustic", "soda lye"]
+    "sodium hydroxide": ["sodium hydroxide", "caustic soda", "lye", "sodium hydrate", "white caustic", "soda lye"],
+    "dichloromethane": ["dichloromethane", "methylene chloride", "methylene dichloride", "dcm", "methane dichloride"],
+    "acetonitrile": ["acetonitrile", "methyl cyanide", "cyanomethane", "ethyl nitrile", "acn"],
+    "tetrahydrofuran": ["tetrahydrofuran", "thf", "oxolane", "1 4 epoxybutane", "diethylene oxide", "tetramethylene oxide"],
+    "acetic acid": ["acetic acid", "ethanoic acid", "glacial acetic acid", "vinegar acid", "methanecarboxylic acid"],
+    "hydrogen peroxide": ["hydrogen peroxide", "dihydrogen dioxide", "dioxidane", "peroxide", "hydroperoxide"],
+    "phosphoric acid": ["phosphoric acid", "orthophosphoric acid", "trihydroxylphosphine oxide", "hydrogen phosphate"],
+    "potassium hydroxide": ["potassium hydroxide", "caustic potash", "potash lye", "potassium hydrate"],
+    "ammonium hydroxide": ["ammonium hydroxide", "ammonia aqueous", "aqueous ammonia", "ammonia solution", "ammoniacal liquor"],
+    "hexane": ["hexane", "n hexane", "normal hexane", "dipropyl", "hexyl hydride"],
+    "ethyl acetate": ["ethyl acetate", "acetic acid ethyl ester", "ethyl ethanoate", "acetoxyethane", "etac"],
+    "chloroform": ["chloroform", "trichloromethane", "formyl trichloride", "methane trichloride"],
+    "dimethyl sulfoxide": ["dimethyl sulfoxide", "dmso", "methyl sulfoxide", "dimethylsulfoxide", "sulfinylbismethane"],
+    "dimethylformamide": ["dimethylformamide", "n n dimethylformamide", "dmf", "n n dimethylmethanamide"],
+    "formaldehyde": ["formaldehyde", "formalin", "methanal", "methylene oxide", "methyl aldehyde", "oxomethane"]
+}
+
+MANUFACTURER_DOMAINS: Dict[str, List[str]] = {
+    "sigma aldrich": ["sigmaaldrich.com", "merckmillipore.com", "milliporesigma.com", "emdmillipore.com", "sigma-aldrich.com"],
+    "sigma": ["sigmaaldrich.com", "merckmillipore.com", "milliporesigma.com"],
+    "aldrich": ["sigmaaldrich.com", "merckmillipore.com"],
+    "merck": ["merckmillipore.com", "sigmaaldrich.com", "merckgroup.com", "emdmillipore.com", "merck.com"],
+    "fisher scientific": ["fishersci.com", "thermofisher.com", "fisherscientific.com"],
+    "fisher": ["fishersci.com", "thermofisher.com", "fisherscientific.com"],
+    "thermo fisher": ["thermofisher.com", "fishersci.com", "alfa.com", "acros.com"],
+    "thermo": ["thermofisher.com", "fishersci.com"],
+    "alfa aesar": ["alfa.com", "thermofisher.com"],
+    "acros organics": ["acros.com", "thermofisher.com"],
+    "honeywell": ["honeywell.com", "lab-honeywell.com", "sds.honeywell.com"],
+    "spectrum chemical": ["spectrumchemical.com", "fishersci.com", "sigmaaldrich.com"],
+    "spectrum": ["spectrumchemical.com", "fishersci.com"],
+    "avantor": ["avantorsciences.com", "vwr.com", "sigmaaldrich.com", "avantormaterials.com"],
+    "vwr": ["vwr.com", "avantorsciences.com"],
+    "tci chemicals": ["tcichemicals.com", "tokyokasei.co.jp"],
+    "tci": ["tcichemicals.com", "tokyokasei.co.jp"],
+    "santa cruz": ["scbt.com"],
+    "cayman": ["caymanchem.com", "caymanchemical.com"],
+    "bio rad": ["bio-rad.com", "biorad.com"],
+    "promega": ["promega.com"],
+    "promega corporation": ["promega.com"],
+    "abcam": ["abcam.com"],
+    "cell signaling technology": ["cellsignal.com"],
+    "cell signaling": ["cellsignal.com"],
+    "cst": ["cellsignal.com"],
+    "new england biolabs": ["neb.com"],
+    "neb": ["neb.com"],
+    "ecolab": ["ecolab.com", "safetydata.ecolab.com"],
+    "3m": ["3m.com", "multimedia.3m.com"],
+    "dow": ["dow.com", "dowcorning.com"],
+    "basf": ["basf.com", "basf.us"],
+    "dupont": ["dupont.com"],
+    "eastman": ["eastman.com"],
+    "evonik": ["evonik.com"],
+    "airgas": ["airgas.com"],
+    "linde": ["linde.com", "linde-gas.com", "praxair.com"],
+    "matheson": ["mathesongas.com"],
+    "bayer": ["bayer.com", "cropscience.bayer.com", "cropscience.bayer.us"],
+    "bayer cropscience": ["cropscience.bayer.com", "bayer.com", "cropscience.bayer.us"],
+    "air liquide": ["airliquide.com", "industry.airliquide.us"]
 }
 
 CHEMICAL_GRADE_MODIFIERS = {
@@ -137,9 +226,9 @@ def extract_sds_sections(full_text: str) -> Dict[str, str]:
     sections: Dict[str, str] = {}
 
     patterns = {
-        "section_1_identification": r'(?:section\s*1[:.]?\s*(?:identification|chemical product)|1\.\s*identification)',
-        "section_2_hazards": r'(?:section\s*2[:.]?\s*(?:hazard|hazards identification)|2\.\s*hazard)',
-        "section_3_composition": r'(?:section\s*3[:.]?\s*(?:composition|ingredient)|3\.\s*composition)',
+        "section_1_identification": r'(?:section\s*1[-:.]?\s*(?:identification|chemical product|product and company)|1\.\s*identification)',
+        "section_2_hazards": r'(?:section\s*(?:2|3)[-:.]?\s*(?:hazard|hazards identification|composition)|2\.\s*hazard)',
+        "section_3_composition": r'(?:section\s*(?:2|3)[-:.]?\s*(?:composition|ingredient)|3\.\s*composition)',
         "section_4_first_aid": r'(?:section\s*4[:.]?\s*first[ -]aid|4\.\s*first[ -]aid)',
         "section_5_fire_fighting": r'(?:section\s*5[:.]?\s*fire|5\.\s*fire)',
         "section_6_accidental_release": r'(?:section\s*6[:.]?\s*accidental|6\.\s*accidental)',
@@ -211,6 +300,23 @@ def detect_document_jurisdiction(full_text: str, sections: Dict[str, str]) -> st
 
     return "United States"
 
+def is_pdf_content(raw_data: bytes, content_type: str = "", url: str = "") -> bool:
+    """
+    Deterministically validates whether raw document bytes and metadata represent a real PDF.
+    Ensures a response is not considered a PDF solely due to URL extension or Content-Type header;
+    requires valid %PDF magic-byte confirmation when raw data is available.
+    """
+    if not raw_data:
+        ct = (content_type or "").lower()
+        u = (url or "").lower().split("?")[0]
+        return "application/pdf" in ct or u.endswith(".pdf")
+
+    # Safe %PDF magic byte check within the initial 1024 bytes (ignoring leading whitespace/BOM)
+    prefix = raw_data[:1024].lstrip()
+    return prefix.startswith(b"%PDF")
+
+is_pdf = is_pdf_content
+
 def parse_sds_document(
     raw_data: bytes,
     content_type: str,
@@ -221,11 +327,11 @@ def parse_sds_document(
     Parses raw bytes of an SDS document (PDF or HTML), extracting structured fields,
     product name, manufacturer, CAS numbers, part numbers, revision dates, and sections.
     """
-    is_pdf = 'application/pdf' in content_type.lower() or url.lower().split('?')[0].endswith('.pdf')
+    is_pdf_doc = is_pdf_content(raw_data, content_type, url)
     full_text = ""
 
     try:
-        if is_pdf:
+        if is_pdf_doc:
             doc = fitz.open(stream=raw_data, filetype="pdf")
             num_pages = len(doc)
             pages_to_read = min(num_pages, max_pdf_pages)
@@ -302,7 +408,7 @@ def parse_sds_document(
     language = detect_document_language(full_text)
     country = detect_document_jurisdiction(full_text, sections)
 
-    url_type = "pdf" if is_pdf else "landing_page"
+    url_type = "pdf" if is_pdf_doc else "landing_page"
     raw_snippet = full_text[:1500].strip()
 
     return SDSEvidence(

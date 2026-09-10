@@ -32,7 +32,7 @@ export const SystemStatusCard: React.FC<SystemStatusCardProps> = ({ health, isLo
       type: 'Stdio Storage Interface',
       status: health?.mcp_server_available ? 'OPERATIONAL' : 'UNAVAILABLE',
       icon: Database,
-      detail: 'src/mcp_server.py (Persistent Excel memory)',
+      detail: 'src/mcp/mcp_server.py (Persistent Excel memory)',
       healthy: !!health?.mcp_server_available,
     },
     {

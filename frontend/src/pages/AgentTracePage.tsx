@@ -1,3 +1,15 @@
+/**
+ * Agent Architecture & Live Trace Visualizer Page
+ * ===============================================
+ * Architecture Role:
+ *   Renders an interactive system diagram of the 8-node LangGraph agent state machine
+ *   alongside live streaming traces of recent chemical verification reasoning chains.
+ *
+ * Integrated Components:
+ *   - ArchitectureDiagram: Visual node graph illustrating START -> decide_action -> search -> rank -> fetch -> verify -> extract -> END.
+ *   - ExecutionTraceViewer: Chronological message and tool execution trace display.
+ */
+
 import React from 'react';
 import { ArchitectureDiagram } from '../components/trace/ArchitectureDiagram';
 import { ExecutionTraceViewer } from '../components/trace/ExecutionTraceViewer';

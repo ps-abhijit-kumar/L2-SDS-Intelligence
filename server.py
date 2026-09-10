@@ -1,3 +1,35 @@
+"""
+FastAPI Backend Application & REST API Gateway
+==============================================
+Architecture Role:
+    Exposes high-performance REST API endpoints connecting the React/TypeScript frontend
+    command center to the LangGraph SDS retrieval agent, the FastMCP Excel server,
+    and batch processing workflows.
+
+Key API Endpoint Groups:
+    1. System Telemetry & Health:
+       - GET /api/health: Reports system status, LLM availability, MCP server readiness, and uptime.
+       - GET /api/stats: Aggregates real-time verification statistics, success rates, and confidence distributions.
+    2. Interactive SDS Search:
+       - POST /api/sds/search: Dispatches single-item chemical search requests directly to the LangGraph
+         orchestration graph, returning structured validation verdicts, grounding evidence, and execution trace.
+    3. Multi-Sheet Batch Excel Management:
+       - GET /api/batch/preview: Inspects and semantically classifies worksheets in active or uploaded workbooks.
+       - POST /api/batch/upload: Handles workbook file uploads, saving to the staging directory.
+       - POST /api/batch/confirm-mapping: Confirms user-selected column mappings and active chemical request sheets.
+       - POST /api/batch/start: Dispatches background worker processing requests asynchronously via FastAPI BackgroundTasks.
+       - GET /api/batch/status: Polls real-time batch execution progress, current row, and throughput.
+       - GET /api/batch/export: Streams the verified Excel workbook with appended results columns.
+    4. Compliance Audit History & Review Queue:
+       - GET /api/history: Queries persistent JSONL execution traces with filtering and pagination.
+       - GET /api/history/{id}: Returns deep diagnostic details for a specific chemical request trace.
+       - GET /api/review: Retrieves requests flagged as 'NEEDS REVIEW' for human compliance verification.
+       - GET /api/trace/latest: Supplies real-time agent state progression for frontend graph visualizations.
+
+Concurrency & Thread Safety:
+    - Employs BatchJobManager with asyncio.Lock to coordinate non-blocking batch execution.
+"""
+
 import os
 import sys
 import re
@@ -18,10 +50,10 @@ import openpyxl
 
 dotenv.load_dotenv()
 
-from src.workflow import create_sds_graph
-from src.mcp_client import SDSMCPClient
-from src.schema import SDSValidationResult
-from src.workbook_utils import (
+from src.agent.workflow import create_sds_graph
+from src.mcp.mcp_client import SDSMCPClient
+from src.core.schema import SDSValidationResult
+from src.excel.workbook_utils import (
     COLUMN_SYNONYMS,
     INVALID_PRODUCT_VALUES,
     is_valid_product_value,
@@ -213,7 +245,7 @@ async def get_health():
     groq_key = os.getenv('GROQ_API_KEY', '')
     groq_configured = bool(groq_key and groq_key.strip() != 'your_groq_api_key_here')
     groq_model = os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')
-    mcp_available = os.path.exists(os.path.join('src', 'mcp_server.py'))
+    mcp_available = os.path.exists(os.path.join('src', 'mcp', 'mcp_server.py'))
     active_file = job_manager.active_excel_file
     excel_available = bool(active_file and os.path.exists(active_file))
     current_state = job_manager.get_current_state()

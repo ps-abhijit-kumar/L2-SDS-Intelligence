@@ -1,3 +1,15 @@
+/**
+ * Human-in-the-Loop Review Queue Page
+ * ===================================
+ * Architecture Role:
+ *   Provides compliance officers with a dedicated triage queue for items marked as 'NEEDS REVIEW'.
+ *   Allows manual inspection of candidate evidence, discrepancy diagnostics, and status sign-off.
+ *
+ * Integrated Components:
+ *   - ReviewQueueTable: Tabular view of flagged items with sorting and filtering.
+ *   - ReviewInspectionDrawer: Slide-out drawer displaying comprehensive grounding traces.
+ */
+
 import React, { useState } from 'react';
 import { ShieldAlert, AlertCircle, Sparkles } from 'lucide-react';
 import { ReviewQueueTable } from '../components/review/ReviewQueueTable';

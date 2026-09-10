@@ -1,5 +1,5 @@
 import pytest
-from src.workflow import perform_verification
+from src.agent.workflow import perform_verification
 
 def test_reflection_approves_perfect_match():
     row_data = {

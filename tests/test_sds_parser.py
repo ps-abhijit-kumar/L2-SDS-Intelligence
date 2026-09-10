@@ -1,5 +1,5 @@
 import pytest
-from src.sds_parser import (
+from src.retrieval.sds_parser import (
     parse_sds_document,
     normalize_identifier,
     normalize_text,

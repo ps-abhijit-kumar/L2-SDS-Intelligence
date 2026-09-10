@@ -53,7 +53,7 @@ The SDS retrieval pipeline requires high-throughput asynchronous network calls (
 
 ### 3. Where is it used?
 * Root orchestrators: [`server.py`](file:///C:/Coding/Projects/L2/server.py), [`main.py`](file:///C:/Coding/Projects/L2/main.py), [`evaluate.py`](file:///C:/Coding/Projects/L2/evaluate.py), [`create_test_data.py`](file:///C:/Coding/Projects/L2/create_test_data.py).
-* Core application modules: [`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py), [`src/security.py`](file:///C:/Coding/Projects/L2/src/security.py), [`src/sds_parser.py`](file:///C:/Coding/Projects/L2/src/sds_parser.py), [`src/tools.py`](file:///C:/Coding/Projects/L2/src/tools.py), [`src/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/workbook_utils.py), [`src/evaluation.py`](file:///C:/Coding/Projects/L2/src/evaluation.py), [`src/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp_client.py), [`src/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp_server.py), [`src/schema.py`](file:///C:/Coding/Projects/L2/src/schema.py), [`src/state.py`](file:///C:/Coding/Projects/L2/src/state.py).
+* Core application modules: [`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py), [`src/agent/evaluation.py`](file:///C:/Coding/Projects/L2/src/agent/evaluation.py), [`src/core/schema.py`](file:///C:/Coding/Projects/L2/src/core/schema.py), [`src/core/state.py`](file:///C:/Coding/Projects/L2/src/core/state.py), [`src/core/security.py`](file:///C:/Coding/Projects/L2/src/core/security.py), [`src/retrieval/sds_parser.py`](file:///C:/Coding/Projects/L2/src/retrieval/sds_parser.py), [`src/retrieval/tools.py`](file:///C:/Coding/Projects/L2/src/retrieval/tools.py), [`src/excel/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/excel/workbook_utils.py), [`src/mcp/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_client.py), [`src/mcp/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py).
 
 ### 4. How does it work here?
 The application runs on an asynchronous event loop (`asyncio.run()`, `async def`). When batch processing Excel rows or evaluating benchmark datasets, tasks yield control during MCP transport roundtrips and HTTP I/O, preventing thread starvation. Thread-safe locks (`asyncio.Lock()`) protect batch job states in [`server.py: BatchJobManager`](file:///C:/Coding/Projects/L2/server.py#L58-L150).
@@ -111,8 +111,8 @@ Pydantic (`pydantic>=2.7.0`) is a data validation and settings management librar
 LLMs are inherently probabilistic and can generate hallucinated formats, ungrounded URLs, or malformed data structures. Pydantic enforces an impermeable deterministic boundary between LLM output and persistent storage.
 
 ### 3.3 Where is it used?
-* [`src/schema.py`](file:///C:/Coding/Projects/L2/src/schema.py): Core schemas (`NormalizedSDSRequest`, `SDSEvidence`, `ActionDecision`, `VerificationResult`, `SDSValidationResult`).
-* [`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py): LLM structured outputs and verification validation.
+* [`src/core/schema.py`](file:///C:/Coding/Projects/L2/src/core/schema.py): Core schemas (`NormalizedSDSRequest`, `SDSEvidence`, `ActionDecision`, `VerificationResult`, `SDSValidationResult`).
+* [`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py): LLM structured outputs and verification validation.
 * [`server.py`](file:///C:/Coding/Projects/L2/server.py): REST request/response validation models (`SingleSearchRequest`, `MappingConfirmRequest`).
 
 ### 3.4 How does it work here?
@@ -146,8 +146,8 @@ LangGraph (`langgraph>=0.0.30`) is a library for building stateful, multi-actor,
 Safety Data Sheet retrieval cannot be solved with a static linear chain. It requires an agentic state machine capable of dynamic action selection, adaptive retry cycles, conditional routing, and independent verification loops.
 
 ### 4.3 Where is it used?
-* [`src/state.py`](file:///C:/Coding/Projects/L2/src/state.py): `SDSState` definition.
-* [`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py#L1455-L1523): `create_sds_graph()` and node definitions (`decide_action_node`, `search_node`, `rank_node`, `fetch_node`, `draft_decision_node`, `verify_decision_node`, `corrective_action_node`, `extract_final_node`).
+* [`src/core/state.py`](file:///C:/Coding/Projects/L2/src/core/state.py): `SDSState` definition.
+* [`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py): `create_sds_graph()` and node definitions (`decide_action_node`, `search_node`, `rank_node`, `fetch_node`, `draft_decision_node`, `verify_decision_node`, `corrective_action_node`, `extract_final_node`).
 
 ### 4.4 How does it work here?
 1. Nodes mutate the state dictionary (`SDSState`).
@@ -183,7 +183,7 @@ LangGraph provides explicit, inspectable state transitions, first-class conditio
 To power the agent's policy engine (`decide_action_node`) with ultra-fast LLM inference (`openai/gpt-oss-120b`), enabling near-instantaneous decision-making without stalling the batch pipeline.
 
 ### 5.3 Where is it used?
-[`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py#L47-L61): `get_llm()` initializes `ChatGroq(temperature=0, groq_api_key=..., model_name=...)`.
+[`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py): `get_llm()` initializes `ChatGroq(temperature=0, groq_api_key=..., model_name=...)`.
 
 ### 5.4 How does it work here?
 * The model is initialized with temperature 0 for deterministic output.
@@ -211,8 +211,8 @@ The **Model Context Protocol (MCP)** is an open industry standard (developed by 
 2. **Standardized Tool Interface**: Storage updates (Excel reads and in-place writes) and document inspection are exposed as standardized tools that can be discovered dynamically.
 
 ### 6.3 Where is it used?
-* Server: [`src/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp_server.py) (`FastMCP("ExcelMCP")`).
-* Client: [`src/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp_client.py) (`SDSMCPClient`).
+* Server: [`src/mcp/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py) (`FastMCP("ExcelMCP")`).
+* Client: [`src/mcp/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_client.py) (`SDSMCPClient`).
 
 ### 6.4 How does it work here?
 The FastMCP server exposes three registered tools:
@@ -234,13 +234,13 @@ MCP is an emerging open standard designed specifically for AI agent tool integra
 ## 7. MCP Client (`SDSMCPClient`) & Dynamic Tool Discovery
 
 ### 7.1 What is it?
-`SDSMCPClient` ([`src/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp_client.py)) is the client-side adapter implementing the standard MCP protocol over stdio.
+`SDSMCPClient` ([`src/mcp/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_client.py)) is the client-side adapter implementing the standard MCP protocol over stdio.
 
 ### 7.2 Why is it used in this project?
 To dynamically discover available tools from the connected MCP server, verify their presence, and invoke them safely without hardcoded assumptions.
 
 ### 7.3 Where is it used?
-[`src/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp_client.py), instantiated in [`main.py`](file:///C:/Coding/Projects/L2/main.py#L21), [`server.py`](file:///C:/Coding/Projects/L2/server.py#L22), and [`src/workflow.py: fetch_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L1014-L1054).
+[`src/mcp/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_client.py), instantiated in [`main.py`](file:///C:/Coding/Projects/L2/main.py#L21), [`server.py`](file:///C:/Coding/Projects/L2/server.py#L22), and [`src/agent/workflow.py: fetch_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 
 ### 7.4 How does it work here?
 1. **Connection**: `await mcp_client.connect()` launches the MCP server subprocess via `stdio_client` and initializes `ClientSession`.
@@ -266,13 +266,13 @@ Dynamic protocol discovery satisfies enterprise architectural standards: the cli
 ## 8. MCP Server (`FastMCP("ExcelMCP")`)
 
 ### 8.1 What is it?
-[`src/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp_server.py) is a FastMCP server running as a dedicated service managing tabular data operations and isolated document inspection.
+[`src/mcp/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py) is a FastMCP server running as a dedicated service managing tabular data operations and isolated document inspection.
 
 ### 8.2 Why is it used in this project?
 To act as the single source of truth for reading pending chemical requests from Excel, updating results in-place, and executing sandboxed document fetching.
 
 ### 8.3 Where is it used?
-[`src/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp_server.py), executed as a subprocess by `SDSMCPClient`.
+[`src/mcp/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py), executed as a subprocess by `SDSMCPClient`.
 
 ### 8.4 How does it work here?
 Decorates Python functions with `@mcp.tool()`:
@@ -308,16 +308,16 @@ The standard input/output (`stdio`) transport mechanism provided by the MCP Pyth
 To enable communication between the FastAPI backend/LangGraph agent and the FastMCP server without opening network sockets, avoiding TCP port collisions, firewall blocks, or network configuration overhead.
 
 ### 9.3 Where is it used?
-[`src/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp_client.py#L22-L38).
+[`src/mcp/mcp_client.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_client.py).
 
 ### 9.4 How does it work here?
-1. Client configures `StdioServerParameters(command=sys.executable, args=[".../src/mcp_server.py"], env=env_vars)`.
+1. Client configures `StdioServerParameters(command=sys.executable, args=[".../src/mcp/mcp_server.py"], env=env_vars)`.
 2. Client spawns server as a child process with redirected pipes.
 3. Client reads from server's stdout and writes to server's stdin using framed JSON-RPC messages.
 4. On application shutdown, `disconnect()` cleanly closes the pipes and terminates the child process.
 
 ### 9.5 What would break if it were removed?
-Communication between `SDSMCPClient` and `src/mcp_server.py` would collapse unless replaced with a network socket (SSE/HTTP).
+Communication between `SDSMCPClient` and `src/mcp/mcp_server.py` would collapse unless replaced with a network socket (SSE/HTTP).
 
 ### 9.6 What alternatives exist?
 Server-Sent Events (SSE) over HTTP, WebSockets, or Unix domain sockets.
@@ -336,7 +336,7 @@ Stdio transport is zero-config, highly secure (no exposed network ports), operat
 To discover publicly accessible Safety Data Sheet documents across official manufacturer portals, chemical databases, and industrial suppliers without requiring costly proprietary search engine API subscriptions.
 
 ### 10.3 Where is it used?
-[`src/tools.py: search_duckduckgo`](file:///C:/Coding/Projects/L2/src/tools.py#L164-L192), invoked by [`src/workflow.py: search_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L903).
+[`src/retrieval/tools.py: search_duckduckgo`](file:///C:/Coding/Projects/L2/src/retrieval/tools.py), invoked by [`src/agent/workflow.py: search_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 
 ### 10.4 How does it work here?
 ```python
@@ -369,7 +369,7 @@ DuckDuckGo provides effective search yield for industrial chemical queries (`<Co
 Over 90% of authentic chemical Safety Data Sheets are published as multi-page PDF documents. PyMuPDF extracts raw text from in-memory byte buffers with unmatched speed and fidelity.
 
 ### 11.3 Where is it used?
-[`src/sds_parser.py: parse_sds_document`](file:///C:/Coding/Projects/L2/src/sds_parser.py#L228-L240).
+[`src/retrieval/sds_parser.py: parse_sds_document`](file:///C:/Coding/Projects/L2/src/retrieval/sds_parser.py).
 
 ### 11.4 How does it work here?
 ```python
@@ -403,7 +403,7 @@ Direct PDF SDS parsing would completely fail.
 Some chemical suppliers host Safety Data Sheets on interactive web portal pages or landing pages rather than direct static PDF links. BeautifulSoup extracts clean textual content while stripping navigation boilerplate.
 
 ### 12.3 Where is it used?
-[`src/sds_parser.py: parse_sds_document`](file:///C:/Coding/Projects/L2/src/sds_parser.py#L241-L245).
+[`src/retrieval/sds_parser.py: parse_sds_document`](file:///C:/Coding/Projects/L2/src/retrieval/sds_parser.py).
 
 ### 12.4 How does it work here?
 ```python
@@ -434,8 +434,8 @@ BeautifulSoup is resilient to malformed, poorly nested HTML commonly encountered
 Enterprise chemical procurement workflows rely heavily on Excel workbooks containing thousands of chemical line items across multiple departments, squads, or allocation sheets.
 
 ### 13.3 Where is it used?
-* Ingestion & Analysis: [`src/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/workbook_utils.py) (`inspect_workbook`, `extract_table_from_dataframe`, `classify_sheet`).
-* In-Place Update: [`src/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp_server.py#L76-L108).
+* Ingestion & Analysis: [`src/excel/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/excel/workbook_utils.py) (`inspect_workbook`, `extract_table_from_dataframe`, `classify_sheet`).
+* In-Place Update: [`src/mcp/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py).
 * Test Data Generation: [`create_test_data.py`](file:///C:/Coding/Projects/L2/create_test_data.py).
 
 ### 13.4 How does it work here?
@@ -626,7 +626,7 @@ Modern browsers natively support `fetch`; using native fetch keeps the bundle si
 To decouple secret API keys (`GROQ_API_KEY`), model configurations, and file paths from source code, preventing credential leakage in git repositories.
 
 ### 20.3 Where is it used?
-[`server.py`](file:///C:/Coding/Projects/L2/server.py#L19), [`main.py`](file:///C:/Coding/Projects/L2/main.py#L13), [`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py).
+[`server.py`](file:///C:/Coding/Projects/L2/server.py#L19), [`main.py`](file:///C:/Coding/Projects/L2/main.py#L13), [`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 
 ### 20.4 How does it work here?
 `dotenv.load_dotenv()` runs at module import, populating `os.environ`. Key variables:
@@ -692,13 +692,13 @@ JSONL is append-only, human-readable, requires zero external database installati
 ## 22. SSRF Network Shield & Security Layer
 
 ### 22.1 What is it?
-A custom, multi-tier Server-Side Request Forgery (SSRF) defense shield implemented in [`src/security.py`](file:///C:/Coding/Projects/L2/src/security.py).
+A custom, multi-tier Server-Side Request Forgery (SSRF) defense shield implemented in [`src/core/security.py`](file:///C:/Coding/Projects/L2/src/core/security.py).
 
 ### 22.2 Why is it used in this project?
 The agent automatically fetches candidate URLs discovered on the public web. Without SSRF defenses, an attacker could supply inputs that cause the server to query internal networks, AWS/GCP cloud metadata endpoints (`169.254.169.254`), or localhost management services.
 
 ### 22.3 Where is it used?
-[`src/security.py`](file:///C:/Coding/Projects/L2/src/security.py): `validate_url_safety()`, `SafeRedirectHandler`, `safe_fetch_document()`.
+[`src/core/security.py`](file:///C:/Coding/Projects/L2/src/core/security.py): `validate_url_safety()`, `SafeRedirectHandler`, `safe_fetch_document()`.
 
 ### 22.4 How does it work here?
 1. **Pre-flight URL Syntax Check**: Only `http` and `https` schemes permitted; URL length bounded (8–2048 chars).
@@ -727,7 +727,7 @@ Low-level network address inspection combining Python's standard `socket` and `i
 Hostnames can be crafted to disguise private IP addresses (e.g., decimal IP notation, custom DNS servers pointing `safe.evil.com` to `127.0.0.1`). Inspecting resolved IP addresses is the only reliable way to prevent IP obfuscation bypasses.
 
 ### 23.3 Where is it used?
-[`src/security.py: is_ip_blocked & validate_url_safety`](file:///C:/Coding/Projects/L2/src/security.py#L48-L156).
+[`src/core/security.py: is_ip_blocked & validate_url_safety`](file:///C:/Coding/Projects/L2/src/core/security.py).
 
 ### 23.4 How does it work here?
 Maintains `BLOCKED_IP_NETWORKS`:
@@ -756,13 +756,13 @@ Hardcoded string checks for "127.0.0.1" (vulnerable to decimal, hex, and alterna
 ## 24. Independent Evaluation Benchmark Suite
 
 ### 24.1 What is it?
-A benchmark suite in [`src/evaluation.py`](file:///C:/Coding/Projects/L2/src/evaluation.py), executed via [`evaluate.py`](file:///C:/Coding/Projects/L2/evaluate.py) against [`data/ground_truth.json`](file:///C:/Coding/Projects/L2/data/ground_truth.json).
+A benchmark suite in [`src/agent/evaluation.py`](file:///C:/Coding/Projects/L2/src/agent/evaluation.py), executed via [`evaluate.py`](file:///C:/Coding/Projects/L2/evaluate.py) against [`data/ground_truth.json`](file:///C:/Coding/Projects/L2/data/ground_truth.json).
 
 ### 24.2 Why is it used in this project?
 To measure the true accuracy, grounding fidelity, and abstention capabilities of the system using an independent ground truth dataset without circular self-scoring.
 
 ### 24.3 Where is it used?
-[`evaluate.py`](file:///C:/Coding/Projects/L2/evaluate.py), [`src/evaluation.py`](file:///C:/Coding/Projects/L2/src/evaluation.py), [`data/ground_truth.json`](file:///C:/Coding/Projects/L2/data/ground_truth.json).
+[`evaluate.py`](file:///C:/Coding/Projects/L2/evaluate.py), [`src/agent/evaluation.py`](file:///C:/Coding/Projects/L2/src/agent/evaluation.py), [`data/ground_truth.json`](file:///C:/Coding/Projects/L2/data/ground_truth.json).
 
 ### 24.4 How does it work here?
 1. Loads 15 multi-class benchmark cases:

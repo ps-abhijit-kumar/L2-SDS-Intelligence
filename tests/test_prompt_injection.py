@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
-from src.workflow import format_policy_context, decide_action_node
-from src.schema import ActionDecision
+from src.agent.workflow import format_policy_context, decide_action_node
+from src.core.schema import ActionDecision
 
 def test_prompt_context_untrusted_data_framing():
     """Verifies format_policy_context wraps candidate search results in defensive untrusted-data markers."""

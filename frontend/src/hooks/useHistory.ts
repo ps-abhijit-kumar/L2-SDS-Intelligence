@@ -1,3 +1,14 @@
+/**
+ * Audit History & Review Queue Query Hooks
+ * ========================================
+ * Architecture Role:
+ *   Provides query hooks for audit logging, review queue monitoring, and trace visualization:
+ *   - useHistory: Fetches filtered, paginated execution history records.
+ *   - useHistoryDetail: Loads full diagnostic and evidence trace for a specific record.
+ *   - useReviewQueue: Polls human-in-the-loop review queue (NEEDS REVIEW) every 15s.
+ *   - useLatestTrace: Polls latest agent workflow state every 10s for trace visualization.
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 

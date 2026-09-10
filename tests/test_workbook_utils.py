@@ -1,5 +1,5 @@
 import pytest
-from src.workbook_utils import (
+from src.excel.workbook_utils import (
     detect_column_mapping,
     classify_sheet,
     is_valid_product_value,

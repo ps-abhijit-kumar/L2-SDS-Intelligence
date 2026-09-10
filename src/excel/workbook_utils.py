@@ -1,3 +1,31 @@
+"""
+Excel Workbook Inspection & Multi-Sheet Processing
+==================================================
+Architecture Role:
+    Provides automated inspection, semantic column mapping, header offset detection,
+    and multi-sheet dataset classification for Excel workbooks ingested by the SDS platform.
+
+Key Capabilities:
+    1. Multi-Sheet Classification (classify_sheet):
+       Inspects worksheet column structures and valid chemical row counts to classify sheets into:
+       - 'SDS_REQUESTS': Authentic chemical request datasets containing product and manufacturer records.
+       - 'SUPPORTING_DATA': Operational reference sheets (e.g., team allocations, vendor contacts).
+       - 'SUMMARY': Aggregated KPI, pivot, or summary metric tables.
+       - 'UNKNOWN': Worksheets with no identifiable chemical or operational schema.
+    2. Dynamic Header Offset Discovery (extract_table_from_dataframe):
+       Scans the initial rows (up to 8 rows) of each worksheet to identify genuine table header rows,
+       enabling seamless handling of spreadsheets with decorative top titles, disclaimers, or empty spacer rows.
+    3. Semantic Column Mapping (detect_column_mapping):
+       Maps arbitrary user spreadsheet headers to canonical SDS request fields (product, company,
+       part_number, language, country, status, found_url, confidence, reasoning) using normalized
+       fuzzy and synonym dictionaries.
+    4. Row Filtering & Cell Validation (is_valid_product_value, is_valid_manufacturer_value):
+       Guards against parsing totals, summary footers, NaN values, or trivial placeholders as chemical requests.
+    5. Four-Checkpoint Request Completeness:
+       Identifies requests missing mandatory language or destination country specifications and
+       flags them with clear diagnostic reasoning as NEEDS REVIEW before search execution.
+"""
+
 import os
 import re
 from typing import Optional, Dict, Any, List, Set, Tuple
@@ -397,7 +425,7 @@ def inspect_workbook(
                     norm_status = "PENDING"
                     if sheet_is_active:
                         pending_requests_count += 1
-                    sheet_pending += 1
+                        sheet_pending += 1
 
                 sheet_valid_requests += 1
                 s_no = len(normalized_requests) + 1

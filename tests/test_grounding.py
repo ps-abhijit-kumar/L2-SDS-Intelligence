@@ -1,5 +1,5 @@
 import pytest
-from src.workflow import perform_verification
+from src.agent.workflow import perform_verification
 
 def test_grounding_invariant_reject_unsearched_url():
     # Final URL is NOT in discovered candidates

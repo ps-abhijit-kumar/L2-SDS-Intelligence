@@ -68,7 +68,7 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
 
 ## 3. Core Architectural Components
 
-### 3.1 Dynamic Action Selection & Agentic Search (`src/workflow.py`)
+### 3.1 Dynamic Action Selection & Agentic Search (`src/agent/workflow.py`)
 * **LLM Policy Engine**: Analyzes request context, candidate history, fetched evidence, and previous queries to generate structured `ActionDecision`.
 * **Agentic Search Query Execution**: When the LLM chooses `SEARCH` or `RETRY`, its validated model-selected `search_query` is the exact query executed by the search mechanism.
 * **Adaptive Retry**: The LLM receives prior search queries and failed attempts to formulate distinct, adaptive queries (e.g. CAS numbers, part numbers, or relaxed company tokens) rather than repeating identical searches.
@@ -87,7 +87,7 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
   - **Product Match**: Verifies chemical identity tokens against document text.
   - **Confidence Calibration**: Strict bounded confidence (`0 <= confidence <= 100`).
 
-### 3.3 FastMCP Tool Discovery & Protocol Boundary (`src/mcp_client.py` & `src/mcp_server.py`)
+### 3.3 FastMCP Tool Discovery & Protocol Boundary (`src/mcp/mcp_client.py` & `src/mcp/mcp_server.py`)
 * Standard Model Context Protocol (MCP) server over `stdio` transport.
 * **Dynamic Tool Discovery**: `SDSMCPClient` queries the server using `list_tools()` upon connection. Discovered tool definitions are verified dynamically before invocation.
 * **Tools Registered**:
@@ -99,19 +99,19 @@ The system prevents hallucinations by enforcing a strict **"Retrieval Before Gen
 * **Why `inspect_sds_document` is MCP-mediated**: Document inspection performs untrusted external network I/O, binary PDF parsing, and arbitrary HTML extraction. Hosting this capability behind the FastMCP stdio subprocess boundary isolates the host application process, enforces strict SSRF boundary checks at the transport boundary, and prevents external payload crashes from compromising the core LangGraph agent state.
 * **Why `search_duckduckgo` & `rank_sds_candidates` remain Native**: Web search retrieval was an intentional scope decision operating as an orchestrating LangGraph node in the state graph. Candidate ranking is a pure, deterministic in-memory calculation over already-gathered search metadata requiring no external network or file I/O; placing ranking behind an MCP subprocess would incur inter-process serialization overhead with zero security or isolation benefit.
 
-### 3.4 Multi-Dataset Workbook Ingestion (`src/workbook_utils.py`)
+### 3.4 Multi-Dataset Workbook Ingestion (`src/excel/workbook_utils.py`)
 * Dynamically detects multiple genuine SDS request datasets (e.g., Part1, Part2, Part3) and separates them from summary / operational tables.
 * Excludes unrelated data without hardcoded sheet names.
 * Presents detected datasets to the user; user selects ONE request set to become active, preserving row-level alignment.
 
-### 3.5 SSRF & Network Safety Layer (`src/security.py`)
+### 3.5 SSRF & Network Safety Layer (`src/core/security.py`)
 * **Scheme Restriction**: Strictly `http` and `https` allowed; blocks `file://`, `ftp://`, `gopher://`.
 * **IP Filtering**: DNS resolution verifies that resolved IP addresses do not belong to loopback (`127.0.0.0/8`, `::1`), private (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local (`169.254.0.0/16`), or cloud metadata endpoints (`169.254.169.254`, `metadata.google.internal`).
 * **Redirect Safety**: Intercepts redirect hops and re-validates each target URL against SSRF policy before connection.
 * **Stream Bounds**: Reads downloads in 64KB chunks up to a strict 10MB maximum limit.
 * **DNS-Rebinding TOCTOU Risk Assessment**: Pre-flight validation screens all resolved IPs. A theoretical time-of-check to time-of-use (TOCTOU) window exists if an adversary controls authoritative DNS racing TTL expiration before connection. In this system, retrieval is scoped to verified chemical manufacturers and authorized distributor domains, rendering this a low-probability residual risk. Per-hop redirect verification in `SafeRedirectHandler` prevents post-connection domain pivoting.
 
-### 3.6 Multi-Class Benchmark Evaluation (`data/ground_truth.json` & `src/evaluation.py`)
+### 3.6 Multi-Class Benchmark Evaluation (`data/ground_truth.json` & `src/agent/evaluation.py`)
 * Evaluates positive, negative, and ambiguous test cases spanning:
   1. `EXACT MATCH`
   2. `BEST AVAILABLE`

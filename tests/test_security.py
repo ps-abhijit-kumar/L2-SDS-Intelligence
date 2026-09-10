@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from src.security import (
+from src.core.security import (
     validate_url_safety,
     safe_fetch_document,
     SecurityError,
@@ -73,7 +73,7 @@ def test_oversized_download_rejection():
     # Stream yields chunks exceeding 100 bytes when max_size=100
     mock_response.read.side_effect = [b"A" * 60, b"B" * 60, b""]
 
-    with patch("src.security.validate_url_safety", return_value=("https://www.valid-site.com/large.pdf", "www.valid-site.com", 443)):
+    with patch("src.core.security.validate_url_safety", return_value=("https://www.valid-site.com/large.pdf", "www.valid-site.com", 443)):
         with patch("urllib.request.build_opener") as mock_build_opener:
             mock_opener = MagicMock()
             mock_opener.open.return_value.__enter__.return_value = mock_response

@@ -93,7 +93,7 @@ Every feature listed below is verified and active in the codebase:
 * **Agentic Search Query Execution**: Validated model-selected queries are passed directly to the search engine and preserved in search provenance.
 * **Adaptive Model-Driven RETRY**: Tracks previous queries in state and automatically formulates distinct alternative search strategies (using CAS numbers, catalog IDs, or broader tokens) to prevent duplicate search loops.
 * **Heuristic Candidate Ranking**: Stage A scoring (0–100) evaluates product synonyms, official manufacturer domains, direct PDF formats, and applies penalties to aggregator domains.
-* **Independent Reflection & Verification**: Dedicated verification stage ([`perform_verification` in src/workflow.py](src/workflow.py)) re-checks raw document text tokens independently, avoiding reliance on LLM self-evaluation.
+* **Independent Reflection & Verification**: Dedicated verification stage ([`perform_verification` in src/agent/workflow.py](src/agent/workflow.py)) re-checks raw document text tokens independently, avoiding reliance on LLM self-evaluation.
 * **Strict Grounding Invariant**: `EXACT MATCH` and `BEST AVAILABLE` verdicts require non-empty, successfully fetched URLs. Any ungrounded candidate is automatically downgraded to `NEEDS REVIEW` with an empty URL.
 * **FastMCP Subprocess Boundary**: Model Context Protocol server runs as a quarantined child process over stdio transport, isolating external document parsing and spreadsheet mutations.
 * **Dynamic Protocol Tool Discovery**: `SDSMCPClient` queries available tools at runtime via `list_tools()` and verifies their presence before execution.
@@ -143,14 +143,14 @@ The system operates across four decoupled architectural layers:
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                    TIER 3: AGENTIC ORCHESTRATION                       │
-│              LangGraph StateGraph Engine (src/workflow.py)             │
+│           LangGraph StateGraph Engine (src/agent/workflow.py)          │
 │    (decide_action -> search -> rank -> fetch -> draft -> verify)       │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ FastMCP Protocol (Stdio Transport)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   TIER 4: ISOLATED FASTMCP BOUNDARY                    │
-│                        FastMCP (src/mcp_server.py)                     │
+│                    FastMCP (src/mcp/mcp_server.py)                     │
 │    (Dynamic Tool Discovery, Excel In-Place Updates, Document Inspect)  │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -178,21 +178,27 @@ The frontend is located in [`frontend/`](frontend) and provides an interactive c
 
 ## 9. Backend
 
-The backend is built with FastAPI and organized into modular components. Every source file and its core responsibility is outlined below:
+The backend is built with FastAPI and organized into modular subpackages under `src/`:
+
+* `src/agent/`: AI workflow orchestration, policy engine, and benchmark evaluation
+* `src/core/`: Pydantic data schemas, StateGraph state definitions, and SSRF security shield
+* `src/retrieval/`: Multi-page SDS parser, DuckDuckGo search retrieval, and two-stage candidate scoring
+* `src/excel/`: Multi-dataset workbook structure analysis, sheet classification, and column mapping
+* `src/mcp/`: FastMCP client adapter and isolated stdio server subprocess
 
 | File | Responsibility |
 |---|---|
 | [server.py](server.py) | FastAPI REST API layer, thread-safe `BatchJobManager`, and audit endpoints |
-| [src/workflow.py](src/workflow.py) | LangGraph StateGraph, LLM policy engine, prerequisite guards, and independent verification |
-| [src/state.py](src/state.py) | Central LangGraph state schema definition (`SDSState`) |
-| [src/schema.py](src/schema.py) | Pydantic v2 data models, grounding validators, and status literal schemas |
-| [src/mcp_client.py](src/mcp_client.py) | FastMCP client managing stdio transport and dynamic tool discovery (`list_tools`) |
-| [src/mcp_server.py](src/mcp_server.py) | FastMCP server subprocess exposing Excel I/O and sandboxed document inspection |
-| [src/security.py](src/security.py) | SSRF network shield, DNS validation, private IP blocking, and safe redirect handler |
-| [src/sds_parser.py](src/sds_parser.py) | In-memory binary PDF parsing (PyMuPDF), HTML parsing, GHS section regex, CAS extraction |
-| [src/tools.py](src/tools.py) | DuckDuckGo search retrieval, Stage A heuristic ranking, and Stage B document scoring |
-| [src/workbook_utils.py](src/workbook_utils.py) | Excel structure analysis, sheet classification, and semantic column mapping |
-| [src/evaluation.py](src/evaluation.py) | Independent benchmark evaluation engine and markdown report generator |
+| [src/agent/workflow.py](src/agent/workflow.py) | LangGraph StateGraph, LLM policy engine, prerequisite guards, and independent verification |
+| [src/agent/evaluation.py](src/agent/evaluation.py) | Independent benchmark evaluation engine and markdown report generator |
+| [src/core/schema.py](src/core/schema.py) | Pydantic v2 data models, grounding validators, and status literal schemas |
+| [src/core/state.py](src/core/state.py) | Central LangGraph state schema definition (`SDSState`) |
+| [src/core/security.py](src/core/security.py) | SSRF network shield, DNS validation, private IP blocking, and safe redirect handler |
+| [src/retrieval/sds_parser.py](src/retrieval/sds_parser.py) | In-memory binary PDF parsing (PyMuPDF), HTML parsing, GHS section regex, CAS extraction |
+| [src/retrieval/tools.py](src/retrieval/tools.py) | DuckDuckGo search retrieval, Stage A heuristic ranking, and Stage B document scoring |
+| [src/excel/workbook_utils.py](src/excel/workbook_utils.py) | Excel structure analysis, sheet classification, and semantic column mapping |
+| [src/mcp/mcp_client.py](src/mcp/mcp_client.py) | FastMCP client managing stdio transport and dynamic tool discovery (`list_tools`) |
+| [src/mcp/mcp_server.py](src/mcp/mcp_server.py) | FastMCP server subprocess exposing Excel I/O and sandboxed document inspection |
 | [main.py](main.py) | CLI batch runner connecting MCP client and LangGraph StateGraph |
 | [evaluate.py](evaluate.py) | Benchmark evaluation CLI entrypoint |
 
@@ -227,7 +233,7 @@ For technical deep-dive questions, see:
 
 ## 12. Security
 
-The platform implements an application-level **SSRF (Server-Side Request Forgery) Network Shield** in [`src/security.py`](src/security.py):
+The platform implements an application-level **SSRF (Server-Side Request Forgery) Network Shield** in [`src/core/security.py`](src/core/security.py):
 
 * **Scheme & Syntax Validation**: Only `http` and `https` schemes permitted; URL length bounded (8–2048 chars).
 * **Domain Filtering**: Blocks loopback hostnames (`localhost`, `127.0.0.1`), cloud metadata endpoints (`metadata.google.internal`, `instance-data`), and internal suffixes (`.local`, `.internal`, `.lan`, `.corp`).
@@ -245,14 +251,14 @@ The platform implements an application-level **SSRF (Server-Side Request Forgery
 
 ## 13. Document & Excel Processing
 
-### Document Processing ([src/sds_parser.py](src/sds_parser.py))
+### Document Processing ([src/retrieval/sds_parser.py](src/retrieval/sds_parser.py))
 * **PDF Parsing via PyMuPDF (`fitz`)**: Reads in-memory byte buffers directly; extracts text from up to 10 pages (`max_pdf_pages=10`).
 * **HTML Parsing via BeautifulSoup4**: Decomposes script, style, nav, and footer elements to extract visible body text from web portals.
 * **16 GHS Section Detection**: Applies regex patterns to split documents into standard sections (Section 1 Identification, Section 2 Hazards, Section 3 Composition, Section 14 Transport, Section 15 Regulatory, etc.).
 * **Entity Extraction**: Regular expressions extract CAS numbers (`\b[1-9]\d{1,6}-\d{2}-\d\b`), catalog/part numbers, revision dates, and supplier information.
 * **Language & Jurisdiction Detection**: Detects language from body text markers (German, French, Spanish, Italian, Dutch, English) and jurisdiction from Section 15 regulatory standards (OSHA, WHMIS, REACH/CLP).
 
-### Excel Batch Processing ([src/workbook_utils.py](src/workbook_utils.py))
+### Excel Batch Processing ([src/excel/workbook_utils.py](src/excel/workbook_utils.py))
 * **Workbook Structure Analysis**: Scans all worksheets and detects table header offsets within the first 8 rows.
 * **Sheet Classification**: Classifies sheets as `SDS_REQUESTS` (chemical requests), `SUPPORTING_DATA` (allocations/rosters), or `SUMMARY` (KPIs/pivots).
 * **Single Active Dataset Contract**: Multiple candidate request sheets are detected without merging; users select one active sheet to process.
@@ -263,7 +269,7 @@ The platform implements an application-level **SSRF (Server-Side Request Forgery
 
 ## 14. Evaluation
 
-### Benchmark Methodology ([src/evaluation.py](src/evaluation.py))
+### Benchmark Methodology ([src/agent/evaluation.py](src/agent/evaluation.py))
 The evaluation runner ([`evaluate.py`](evaluate.py)) tests the retrieval pipeline against a multi-class ground truth dataset ([`data/ground_truth.json`](data/ground_truth.json)):
 
 * **15 Benchmark Cases**:
@@ -326,16 +332,27 @@ The evaluation runner ([`evaluate.py`](evaluate.py)) tests the retrieval pipelin
 ├── .gitignore                     # Git ignore policies
 │
 ├── src/                           # Backend application modules
-│   ├── workflow.py                # LangGraph StateGraph, policy engine, verification
-│   ├── state.py                   # SDSState schema (TypedDict)
-│   ├── schema.py                  # Pydantic v2 validation models
-│   ├── security.py                # SSRF network shield, DNS/IP checks, redirect handler
-│   ├── sds_parser.py              # In-memory PDF & HTML parser, GHS section regex
-│   ├── tools.py                   # DuckDuckGo search, Stage A & B scoring
-│   ├── workbook_utils.py          # Sheet classification, semantic column mapping
-│   ├── mcp_client.py              # FastMCP client with dynamic tool discovery
-│   ├── mcp_server.py              # FastMCP server over stdio (Excel & doc inspect)
-│   └── evaluation.py              # Benchmark evaluation suite engine
+│   ├── __init__.py                # Package root
+│   ├── agent/                     # AI workflow, policy engine, evaluation
+│   │   ├── __init__.py
+│   │   ├── workflow.py            # LangGraph StateGraph, policy engine, verification
+│   │   └── evaluation.py          # Benchmark evaluation suite engine
+│   ├── core/                      # Data models, state schemas, security
+│   │   ├── __init__.py
+│   │   ├── schema.py              # Pydantic v2 validation models
+│   │   ├── state.py               # SDSState schema (TypedDict)
+│   │   └── security.py            # SSRF network shield, DNS/IP checks, redirect handler
+│   ├── retrieval/                 # Search, ranking, and document parsing
+│   │   ├── __init__.py
+│   │   ├── sds_parser.py          # In-memory PDF & HTML parser, GHS section regex
+│   │   └── tools.py               # DuckDuckGo search, Stage A & B scoring
+│   ├── excel/                     # Excel workbook ingestion & utilities
+│   │   ├── __init__.py
+│   │   └── workbook_utils.py      # Sheet classification, semantic column mapping
+│   └── mcp/                       # FastMCP protocol implementation
+│       ├── __init__.py
+│       ├── mcp_client.py          # FastMCP client with dynamic tool discovery
+│       └── mcp_server.py          # FastMCP server over stdio (Excel & doc inspect)
 │
 ├── frontend/                      # React command center application
 │   ├── package.json               # Frontend dependencies & scripts
@@ -479,10 +496,10 @@ The evaluation runner ([`evaluate.py`](evaluate.py)) tests the retrieval pipelin
 ## 21. Evaluation Talking Points
 
 1. **Retrieval Before Generation**: The system never asks the LLM to invent document links from memory. It retrieves candidate documents on the public web, downloads them safely, parses real text sections, and verifies the raw text.
-2. **SSRF Defense Shield**: Before any network connection is opened, `src/security.py` resolves hostnames via `socket.getaddrinfo` and checks every resolved IP against RFC 1918, loopback, and cloud metadata CIDRs. Redirects are validated on every single hop.
-3. **Dynamic MCP Tool Discovery**: `SDSMCPClient` does not assume hardcoded tools. It negotiates tools dynamically with `src/mcp_server.py` over the standard Model Context Protocol over stdio pipes, inspecting input schemas at runtime.
-4. **Non-Circular Grounding Invariant**: In `src/workflow.py`, positive verdicts are rejected if the final URL was not discovered during search and fetched successfully. Negative cases (missing product, wrong manufacturer, SSRF attack) are forced to `NEEDS REVIEW` with an empty URL.
-5. **Multi-Dataset Excel Contract**: In `src/workbook_utils.py`, multi-sheet workbooks are inspected structurally; supporting squad allocation sheets are separated from actual SDS requests, preventing data corruption.
+2. **SSRF Defense Shield**: Before any network connection is opened, `src/core/security.py` resolves hostnames via `socket.getaddrinfo` and checks every resolved IP against RFC 1918, loopback, and cloud metadata CIDRs. Redirects are validated on every single hop.
+3. **Dynamic MCP Tool Discovery**: `SDSMCPClient` does not assume hardcoded tools. It negotiates tools dynamically with `src/mcp/mcp_server.py` over the standard Model Context Protocol over stdio pipes, inspecting input schemas at runtime.
+4. **Non-Circular Grounding Invariant**: In `src/agent/workflow.py`, positive verdicts are rejected if the final URL was not discovered during search and fetched successfully. Negative cases (missing product, wrong manufacturer, SSRF attack) are forced to `NEEDS REVIEW` with an empty URL.
+5. **Multi-Dataset Excel Contract**: In `src/excel/workbook_utils.py`, multi-sheet workbooks are inspected structurally; supporting squad allocation sheets are separated from actual SDS requests, preventing data corruption.
 6. **True Dynamic Actions**: `decide_action_node` evaluates observations to choose `SEARCH`, `RANK`, `FETCH`, `RETRY`, or `FINISH`. Prerequisite guards ensure the model cannot take illegal actions.
 7. **Production Testing Foundation**: The repository contains 91 automated unit and integration tests covering security, schema validation, parsing, workflow routing, and MCP stdio roundtrips.
 8. **Process Isolation**: Untrusted binary document parsing runs in an isolated FastMCP subprocess, preventing crashes from impacting the primary web API.

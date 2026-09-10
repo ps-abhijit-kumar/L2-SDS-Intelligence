@@ -1,12 +1,12 @@
 import pytest
-from src.tools import (
+from src.retrieval.tools import (
     search_duckduckgo,
     rank_sds_candidates,
     fetch_document_text,
     score_document_evidence,
     generate_retrieval_queries
 )
-from src.schema import SDSEvidence
+from src.core.schema import SDSEvidence
 
 def test_search_duckduckgo():
     results = search_duckduckgo.invoke({"query": "Acetone SDS", "max_results": 1})

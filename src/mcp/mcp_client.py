@@ -1,3 +1,25 @@
+"""
+Model Context Protocol (MCP) Stdio Client
+=========================================
+Architecture Role:
+    Provides an asynchronous client interface to the FastMCP server, managing
+    subprocess lifecycle, stdio communication channels, and dynamic tool discovery.
+
+Key Features & Protocol Controls:
+    1. Subprocess Lifecycle Management:
+       Spawns `src/mcp/mcp_server.py` via Python executable in an isolated subprocess with
+       configured PYTHONPATH and target EXCEL_FILE_PATH, managed through AsyncExitStack.
+    2. Dynamic Tool Discovery (list_tools):
+       Discovers available server tools at runtime, inspecting tool names, descriptions,
+       and JSON input schemas. Caches discovered tools and supports forced refresh.
+    3. Verified Tool Invocation (call_tool_safe):
+       Guards every tool call by verifying the tool is registered in the discovered tools registry
+       before execution, raising descriptive errors if a tool is unavailable.
+    4. Typed Wrapper Methods:
+       Exposes high-level async helper methods (`get_pending_requests`, `update_request_status`,
+       `inspect_sds_document`) for clean integration into batch processors and agent nodes.
+"""
+
 import os
 import sys
 import json
@@ -12,8 +34,9 @@ class SDSMCPClient:
     Implements dynamic MCP protocol tool discovery (list_tools) and verified tool execution.
     """
     def __init__(self, excel_file_path: Optional[str] = None):
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        server_script = os.path.join(project_root, "src", "mcp_server.py")
+        # Derive project root (depth 3: src/mcp/mcp_client.py -> src/mcp -> src -> project root)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        server_script = os.path.join(project_root, "src", "mcp", "mcp_server.py")
         env_vars = dict(os.environ)
         env_vars["PYTHONPATH"] = project_root
         if excel_file_path:

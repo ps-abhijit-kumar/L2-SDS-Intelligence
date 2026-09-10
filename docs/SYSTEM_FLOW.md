@@ -18,13 +18,13 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
                                          │ Initial State Seed
                                          ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│             STAGE 1: STATEGRAPH INITIALIZATION (src/state.py, SDSState)           │
+│         STAGE 1: STATEGRAPH INITIALIZATION (src/core/state.py, SDSState)         │
 │  Initializes messages, candidate pools, fetch caches, retry counters, provenance │
 └────────────────────────────────────────┬─────────────────────────────────────────┘
                                          │ Invokes StateGraph
                                          ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│       STAGE 2: DYNAMIC ACTION SELECTION NODE (src/workflow.py: decide_action)    │
+│   STAGE 2: DYNAMIC ACTION SELECTION NODE (src/agent/workflow.py: decide_action)  │
 │  1. Check fast-path abstention (empty product, SSRF vectors in parameters)       │
 │  2. Enforce hard iteration (<=6) & fetch (<=3) budgets                           │
 │  3. Consult Groq LLM (openai/gpt-oss-120b) for structured ActionDecision         │
@@ -36,7 +36,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
         ▼                                ▼                                ▼
 ┌────────────────────────┐      ┌────────────────────────┐      ┌────────────────────────┐
 │   STAGE 3: SEARCH      │      │   STAGE 4: RANKING     │      │   STAGE 5: FETCHING    │
-│  (src/workflow.py:     │      │  (src/workflow.py:     │      │  (src/workflow.py:     │
+│ (src/agent/workflow.py:│      │ (src/agent/workflow.py:│      │ (src/agent/workflow.py:│
 │   search_node)         │      │   rank_node)           │      │   fetch_node)          │
 │                        │      │                        │      │                        │
 │ • Validates model query│      │ • Stage A Metadata     │      │ • Routes through MCP   │
@@ -50,7 +50,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
                                             │ Unvisited URLs / Retry Loops
                                             ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│         STAGE 6: DRAFT DECISION NODE (src/workflow.py: draft_decision_node)       │
+│    STAGE 6: DRAFT DECISION NODE (src/agent/workflow.py: draft_decision_node)     │
 │  1. Executes Stage B Document-First Evidence Scoring (score_document_evidence)   │
 │  2. Evaluates GHS section presence, chemical synonyms, manufacturer tokens       │
 │  3. Formulates initial draft status, confidence, and candidate URL               │
@@ -58,7 +58,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
                                          │ Draft Decision
                                          ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│    STAGE 7: INDEPENDENT VERIFICATION NODE (src/workflow.py: verify_decision)     │
+│ STAGE 7: INDEPENDENT VERIFICATION NODE (src/agent/workflow.py: verify_decision)  │
 │  1. SSRF Input Parameter Check                                                   │
 │  2. Provenance Grounding Check: URL must be in discovered_urls & successful_fetch│
 │  3. Independent Document Evidence Verification (Section 1, Section 3, Section 15)│
@@ -71,12 +71,14 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
                    ▼                                           ▼
 ┌───────────────────────────────────────┐   ┌──────────────────────────────────────┐
 │   STAGE 8: CORRECTIVE ACTION NODE     │   │                                      │
-│  (src/workflow.py: corrective_action) │   │                                      │
+│  (src/agent/workflow.py:              │   │                                      │
+│   corrective_action)                  │   │                                      │
 │ • Adjusts status (downgrades to       │   │                                      │
 │   BEST AVAILABLE or NEEDS REVIEW)     │──►│   STAGE 9: EXTRACT FINAL NODE        │
-│ • Clears URL if ungrounded            │   │  (src/workflow.py: extract_final)    │
-│ • Calibrates bounded confidence score │   │ • Binds provenance metadata          │
-└───────────────────────────────────────┘   │ • Classifies review category         │
+│ • Clears URL if ungrounded            │   │  (src/agent/workflow.py:             │
+│ • Calibrates bounded confidence score │   │   extract_final)                     │
+└───────────────────────────────────────┘   │ • Binds provenance metadata          │
+                                            │ • Classifies review category         │
                                             │ • Validates via SDSValidationResult  │
                                             └──────────────────┬───────────────────┘
                                                                │ Final Result
@@ -108,14 +110,14 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
 #### Path B: Batch Multi-Sheet Excel Ingestion
 * **Input**: An Excel workbook (`.xlsx`) uploaded via `POST /api/batch/upload` or default file (`sample_requests_eval.xlsx`).
 * **Processing**:
-  1. `inspect_workbook` in [`src/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/workbook_utils.py#L199-L350) scans all sheets in the workbook.
+  1. `inspect_workbook` in [`src/excel/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/excel/workbook_utils.py) scans all sheets in the workbook.
   2. Detects header rows within the first 8 rows via `extract_table_from_dataframe`.
   3. Maps column headers semantically to standard fields (`product`, `company`, `part_number`, `country`, `language`, `status`, `found_url`, `confidence`, `reasoning`) using `COLUMN_SYNONYMS`.
   4. Classifies each worksheet into `SDS_REQUESTS`, `SUPPORTING_DATA`, `SUMMARY`, or `UNKNOWN` using `classify_sheet`.
   5. User selects the single active request sheet via `POST /api/batch/confirm-mapping`.
   6. `BatchJobManager` in `server.py` locks batch execution, initializes thread-safe state, and processes rows sequentially.
 * **Output**: Normalized queue of request rows (`List[Dict[str, Any]]`) with `_sheet_name`, `_excel_row`, and `_row_index` markers.
-* **Responsible File**: [`src/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/workbook_utils.py), [`server.py`](file:///C:/Coding/Projects/L2/server.py#L55-L160).
+* **Responsible File**: [`src/excel/workbook_utils.py`](file:///C:/Coding/Projects/L2/src/excel/workbook_utils.py), [`server.py`](file:///C:/Coding/Projects/L2/server.py#L55-L160).
 * **Next Stage**: Stage 1 (Sequential Row Execution).
 
 ---
@@ -124,12 +126,12 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
 
 * **Input**: Single chemical request dictionary (`row_data`) and optional connected `SDSMCPClient`.
 * **Processing**:
-  1. Builds `SDSState` dictionary conforming to [`src/state.py`](file:///C:/Coding/Projects/L2/src/state.py).
+  1. Builds `SDSState` dictionary conforming to [`src/core/state.py`](file:///C:/Coding/Projects/L2/src/core/state.py).
   2. Seeds empty collections for `discovered_candidates`, `ranked_candidates`, `fetched_urls`, `successful_fetches`, `failed_fetches`, `search_queries`, `action_history`.
   3. Seeds execution bounds: `iteration_count = 0`, `retry_count = 0`, `current_search_query = None`, `current_candidate_url = ""`.
   4. Passes `mcp_client` reference so downstream nodes can invoke MCP tools.
 * **Output**: Initial `SDSState` object passed to `graph.ainvoke(initial_state, config={"recursion_limit": 20})`.
-* **Responsible File**: [`src/state.py`](file:///C:/Coding/Projects/L2/src/state.py), [`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py#L1455-L1523).
+* **Responsible File**: [`src/core/state.py`](file:///C:/Coding/Projects/L2/src/core/state.py), [`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 * **Data Structure**: `SDSState` (TypedDict with LangGraph message channels).
 * **Next Stage**: Stage 2 (`decide_action_node`).
 
@@ -155,7 +157,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
      - `RETRY`: Prerequisite: prior queries exist + `retry_count < 2`. Automatically calls `generate_adaptive_query` to generate a non-identical query (incorporating CAS, catalog ID, or relaxed terms).
      - `FINISH`: Valid terminal state.
 * **Output**: Updated state dictionary with `next_action`, `current_candidate_url`, `current_search_query`, updated `retry_count`, and appended `action_history` entry.
-* **Responsible File**: [`src/workflow.py: decide_action_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L555-L856).
+* **Responsible File**: [`src/agent/workflow.py: decide_action_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 * **Data Structure**: `ActionDecision` Pydantic model (`action`, `reason`, `target_url`, `search_query`, `retry_count`).
 * **Routing Decision** (`route_action`):
   - `"SEARCH"` -> `search_node`
@@ -176,7 +178,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
   4. Detects manufacturer official domains via `get_authorized_domains_for_manufacturer`. If official domain candidates were not surfaced in the primary query, executes an auxiliary query (`site:<authorized_domain> <product> SDS`).
   5. Appends all unique candidates to `discovered_candidates` with discovery timestamp, snippet, title, domain, and `is_pdf` flag.
 * **Output**: `discovered_candidates` list enriched; query appended to `search_queries`.
-* **Responsible File**: [`src/workflow.py: search_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L858-L970), [`src/tools.py: search_duckduckgo`](file:///C:/Coding/Projects/L2/src/tools.py#L164-L192).
+* **Responsible File**: [`src/agent/workflow.py: search_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py), [`src/retrieval/tools.py: search_duckduckgo`](file:///C:/Coding/Projects/L2/src/retrieval/tools.py).
 * **Routing Decision** (`route_search`):
   - If candidates discovered: routes to `rank_node`.
   - If no candidates discovered: routes back to `decide_action_node`.
@@ -188,7 +190,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
 
 * **Input**: `discovered_candidates` list and target request criteria.
 * **Processing**:
-  1. Invokes `rank_sds_candidates` ([`src/tools.py`](file:///C:/Coding/Projects/L2/src/tools.py#L194-L372)) to compute Stage A heuristic scores (0–100):
+  1. Invokes `rank_sds_candidates` ([`src/retrieval/tools.py`](file:///C:/Coding/Projects/L2/src/retrieval/tools.py)) to compute Stage A heuristic scores (0–100):
      - **Product Match Score (0–30)**: Exact name containment, chemical synonyms (`CHEMICAL_SYNONYMS`), or chemical noun token overlap.
      - **Manufacturer Match Score (0–40)**: Official domain match (+40), trusted distributor (+15), snippet match (+5–10), competing manufacturer domain demotion.
      - **Part / CAS Match Score (0–15)**: Presence of requested CAS or part number in URL, title, or snippet.
@@ -200,7 +202,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
   2. Sorts candidates in descending order of score.
   3. Identifies top unvisited candidate URL as `current_candidate_url`.
 * **Output**: `ranked_candidates` list with sub-scores and `current_candidate_url`.
-* **Responsible File**: [`src/workflow.py: rank_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L972-L1000), [`src/tools.py: rank_sds_candidates`](file:///C:/Coding/Projects/L2/src/tools.py#L194-L372).
+* **Responsible File**: [`src/agent/workflow.py: rank_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py), [`src/retrieval/tools.py: rank_sds_candidates`](file:///C:/Coding/Projects/L2/src/retrieval/tools.py).
 * **Next Stage**: Routes back to `decide_action_node` to validate the `FETCH` action.
 
 ---
@@ -216,7 +218,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
      - FastMCP server runs in isolated child process, executes `safe_fetch_document`, parses document, and returns structured JSON evidence.
   3. **Path 2: Native Fallback**:
      - If MCP client is unavailable, invokes `safe_fetch_document` directly.
-  4. **SSRF Network Shield Enforcement** ([`src/security.py`](file:///C:/Coding/Projects/L2/src/security.py)):
+  4. **SSRF Network Shield Enforcement** ([`src/core/security.py`](file:///C:/Coding/Projects/L2/src/core/security.py)):
      - Validates scheme (HTTP/HTTPS only).
      - Resolves hostname via `socket.getaddrinfo`.
      - Inspects resolved IP against `BLOCKED_IP_NETWORKS` (RFC 1918 private IPs, loopback `127.0.0.0/8`, link-local/cloud metadata `169.254.0.0/16`, CGNAT, IPv6 ULA/link-local).
@@ -225,7 +227,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
   5. If fetch or parse fails or violates SSRF policy, records error in `failed_fetches[target_url]`.
   6. If successful, records structured `SDSEvidence` in `successful_fetches[target_url]`.
 * **Output**: Updated `successful_fetches` or `failed_fetches`.
-* **Responsible File**: [`src/workflow.py: fetch_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L1002-L1094), [`src/security.py`](file:///C:/Coding/Projects/L2/src/security.py), [`src/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp_server.py#L109-L138).
+* **Responsible File**: [`src/agent/workflow.py: fetch_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py), [`src/core/security.py`](file:///C:/Coding/Projects/L2/src/core/security.py), [`src/mcp/mcp_server.py`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py).
 * **Routing Decision** (`route_fetch`):
   - If a valid SDS document has been successfully fetched: routes to `draft_decision_node`.
   - If unvisited candidates remain and fetch count < 3: routes to `decide_action_node` to fetch next candidate.
@@ -256,7 +258,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
      - Language detected from structural header keywords (German, French, Spanish, Italian, Dutch, English).
      - Jurisdiction detected from Section 15 regulatory standards (OSHA/HCS 2012 for US, WHMIS for Canada, REACH/CLP for EU/UK).
 * **Output**: Structured `SDSEvidence` Pydantic model (`url`, `product_name`, `manufacturer`, `cas_numbers`, `part_numbers`, `revision_date`, `language`, `country`, `is_sds`, `sections`, `url_type`, `fetched_successfully`).
-* **Responsible File**: [`src/sds_parser.py: parse_sds_document`](file:///C:/Coding/Projects/L2/src/sds_parser.py#L214-L324).
+* **Responsible File**: [`src/retrieval/sds_parser.py: parse_sds_document`](file:///C:/Coding/Projects/L2/src/retrieval/sds_parser.py).
 * **Data Structure**: `SDSEvidence`.
 
 ---
@@ -265,7 +267,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
 
 * **Input**: `successful_fetches` containing parsed `SDSEvidence` for all fetched documents.
 * **Processing**:
-  1. Scores each fetched document via `score_document_evidence` ([`src/tools.py`](file:///C:/Coding/Projects/L2/src/tools.py#L374-L484)):
+  1. Scores each fetched document via `score_document_evidence` ([`src/retrieval/tools.py`](file:///C:/Coding/Projects/L2/src/retrieval/tools.py)):
      - Structure Score (0–25): Genuine GHS/OSHA headers.
      - Product Evidence Score (0–35): Chemical match in Section 1 or document text.
      - Manufacturer Evidence Score (0–30): Official domain or supplier match in Section 1.
@@ -279,7 +281,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
      - Secondary trusted distributor or landing page -> `BEST AVAILABLE` (confidence 75–85%).
      - Compliance failure or aggregator -> `NEEDS REVIEW` (confidence 10–40%, URL cleared).
 * **Output**: `draft_decision` dictionary (`status`, `confidence`, `detailed_reasoning`, `final_url`).
-* **Responsible File**: [`src/workflow.py: draft_decision_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L1096-L1218).
+* **Responsible File**: [`src/agent/workflow.py: draft_decision_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 * **Next Stage**: Stage 8 (`verify_decision_node`).
 
 ---
@@ -287,7 +289,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
 ### Stage 8: Independent Reflection & Programmatic Verification (`verify_decision_node`)
 
 * **Input**: `draft_decision`, `row_data`, `discovered_candidates`, `successful_fetches`, `failed_fetches`.
-* **Processing** via `perform_verification` ([`src/workflow.py`](file:///C:/Coding/Projects/L2/src/workflow.py#L170-L450)):
+* **Processing** via `perform_verification` ([`src/agent/workflow.py`](file:///C:/Coding/Projects/L2/src/agent/workflow.py)):
   1. **SSRF Defense Check**: Rejects any request row containing loopback/private IPs with immediate `NEEDS REVIEW` and confidence 0.
   2. **Grounding Invariant Check**:
      - Checks if `draft_url` exists in `discovered_candidates` (URL provenance).
@@ -303,7 +305,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
      - `BEST AVAILABLE`: Requires non-empty URL, confidence >= 30, verified chemical match from secondary portal or variant jurisdiction/language.
      - `NEEDS REVIEW`: Requires `final_url == ""`. Any ungrounded or failed candidate is forced to an empty URL.
 * **Output**: Structured `VerificationResult` Pydantic model (`approved`, `issues`, `corrections`, `final_status`, `final_url`, `confidence`, `reasoning`, `product_match`, `manufacturer_match`, `jurisdiction_match`, `language_match`).
-* **Responsible File**: [`src/workflow.py: verify_decision_node & perform_verification`](file:///C:/Coding/Projects/L2/src/workflow.py#L170-L450, #L1220-L1256).
+* **Responsible File**: [`src/agent/workflow.py: verify_decision_node & perform_verification`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 * **Routing Decision** (`route_verification`):
   - If `verification_result["approved"]` is False: routes to `corrective_action_node`.
   - If `approved` is True: routes to `extract_final_node`.
@@ -319,7 +321,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
   3. Calibrates confidence score to grounded value.
   4. Replaces draft reasoning with detailed explanation citing verification findings.
 * **Output**: Corrected `draft_decision` state dictionary.
-* **Responsible File**: [`src/workflow.py: corrective_action_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L1257-L1272).
+* **Responsible File**: [`src/agent/workflow.py: corrective_action_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py).
 * **Next Stage**: Stage 10 (`extract_final_node`).
 
 ---
@@ -346,7 +348,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
      - Enforces non-empty URL for positive verdicts; enforces empty URL for `NEEDS REVIEW`.
      - Enforces minimum reasoning length (5–2500 chars).
 * **Output**: Final `SDSValidationResult` state dictionary.
-* **Responsible File**: [`src/workflow.py: extract_final_node`](file:///C:/Coding/Projects/L2/src/workflow.py#L1273-L1402), [`src/schema.py: SDSValidationResult`](file:///C:/Coding/Projects/L2/src/schema.py#L170-L228).
+* **Responsible File**: [`src/agent/workflow.py: extract_final_node`](file:///C:/Coding/Projects/L2/src/agent/workflow.py), [`src/core/schema.py: SDSValidationResult`](file:///C:/Coding/Projects/L2/src/core/schema.py).
 * **Next Stage**: Graph terminal (`END`). Returns final state dictionary to caller.
 
 ---
@@ -371,7 +373,7 @@ Every stage outlines its exact **Input**, **Processing**, **Output**, **Responsi
        - `provenance`: complete provenance dictionary
        - `messages`: serialized conversational messages
 * **Output**: Updated Excel file and appended JSONL audit log.
-* **Responsible File**: [`src/mcp_server.py: update_request_status`](file:///C:/Coding/Projects/L2/src/mcp_server.py#L67-L108), [`server.py`](file:///C:/Coding/Projects/L2/server.py#L490-L520).
+* **Responsible File**: [`src/mcp/mcp_server.py: update_request_status`](file:///C:/Coding/Projects/L2/src/mcp/mcp_server.py), [`server.py`](file:///C:/Coding/Projects/L2/server.py#L490-L520).
 * **Next Stage**: Stage 12 (Frontend Presentation).
 
 ---

@@ -1,3 +1,29 @@
+"""
+Ground Truth Benchmark Evaluation Harness
+=========================================
+Architecture Role:
+    Provides automated benchmarking, rigorous scoring, and performance reporting
+    for the SDS intelligence agent against the curated ground truth dataset (data/ground_truth.json).
+
+Evaluation Dimensions & Scoring Logic:
+    1. Strict Status Agreement (evaluate_status):
+       Compares agent verdicts (EXACT MATCH, BEST AVAILABLE, NEEDS REVIEW) strictly against
+       ground truth without collapsing or interchangeable allowances.
+    2. URL Grounding Verification (evaluate_url_grounding):
+       - For positive verdicts (EXACT MATCH, BEST AVAILABLE): Verifies that the returned URL
+         matches authorized manufacturer domains or pre-approved candidate links.
+       - For negative / abstention cases (NEEDS REVIEW): Requires an empty URL to prevent hallucinated citations.
+    3. Independent Chemical Entity Verification:
+       - evaluate_product: Verifies chemical substance token overlap between ground truth and extracted text.
+       - evaluate_manufacturer: Verifies supplier company token overlap without trusting internal agent booleans.
+    4. Quantitative Metric Aggregation:
+       Computes overall accuracy, per-status precision, recall, F1-scores, grounding accuracy,
+       and end-to-end processing latency.
+    5. Automated Markdown Reporting:
+       Generates comprehensive markdown reports (`evaluation_report.md`) detailing per-query results,
+       confusion matrices, and diagnostic failure traces.
+"""
+
 import os
 import re
 import json
@@ -8,10 +34,10 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from src.workflow import create_sds_graph
-from src.schema import SDSValidationResult
-from src.sds_parser import normalize_text, normalize_identifier
-from src.mcp_client import SDSMCPClient
+from src.agent.workflow import create_sds_graph
+from src.core.schema import SDSValidationResult
+from src.retrieval.sds_parser import normalize_text, normalize_identifier
+from src.mcp.mcp_client import SDSMCPClient
 
 GROUND_TRUTH_FILE = os.path.join("data", "ground_truth.json")
 EVAL_LOGS_DIR = os.path.join("logs", "evaluation_runs")

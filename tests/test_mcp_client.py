@@ -3,7 +3,7 @@ import os
 import json
 import tempfile
 import openpyxl
-from src.mcp_client import SDSMCPClient
+from src.mcp.mcp_client import SDSMCPClient
 
 @pytest.mark.asyncio
 async def test_mcp_tool_discovery():
@@ -111,7 +111,7 @@ async def test_unregistered_mcp_tool_rejected_by_call_tool_safe():
 
 def test_policy_context_formats_mcp_discovered_capabilities():
     """Verifies that format_policy_context renders dynamic MCP tool metadata into policy observations."""
-    from src.workflow import format_policy_context
+    from src.agent.workflow import format_policy_context
     from unittest.mock import MagicMock
 
     mock_client = MagicMock()
@@ -149,7 +149,7 @@ def test_policy_context_formats_mcp_discovered_capabilities():
 @pytest.mark.asyncio
 async def test_fetch_node_fails_safely_when_mcp_tool_not_discovered():
     """Verifies that fetch_node safely halts with clear message if inspect_sds_document is not discovered."""
-    from src.workflow import fetch_node
+    from src.agent.workflow import fetch_node
     from unittest.mock import MagicMock
 
     mock_client = MagicMock()

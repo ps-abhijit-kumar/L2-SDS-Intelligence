@@ -1,3 +1,25 @@
+"""
+Security & SSRF Defense Module
+==============================
+Architecture Role:
+    Provides network isolation, Server-Side Request Forgery (SSRF) prevention,
+    and safe streaming document retrieval for all chemical Safety Data Sheet (SDS)
+    operations across the platform (FastAPI endpoints, LangGraph agent nodes, and FastMCP server).
+
+Key Security Controls:
+    1. Pre-Flight DNS Verification: Resolves target hostnames to IP addresses prior to HTTP request
+       dispatch, verifying that no resolved address maps to private, loopback, multicast, or cloud metadata ranges.
+    2. Blocked Network Ranges: Explicitly blocks RFC 1918 private subnets (10.0.0.0/8, 172.16.0.0/12,
+       192.168.0.0/16), IPv4/IPv6 loopback (127.0.0.0/8, ::1/128), link-local addresses (169.254.0.0/16, fe80::/10),
+       and AWS/GCP/Azure cloud instance metadata services (169.254.169.254, metadata.google.internal).
+    3. Safe Redirect Traversal: SafeRedirectHandler inspects every HTTP redirect hop (301, 302, 307, 308)
+       against SSRF policies, preventing open redirect exploitation to internal network perimeters.
+    4. Bounded Streaming: Implements chunked streaming (64 KB buffers) with a strict hard ceiling
+       (10 MB MAX_DOCUMENT_SIZE_BYTES) to protect against memory exhaustion / zip-bomb denial-of-service.
+    5. TOCTOU Considerations: Pre-flight check coupled with per-hop redirect re-validation provides
+       defense-in-depth against DNS rebinding while permitting legitimate chemical supplier retrieval.
+"""
+
 import socket
 import ipaddress
 import urllib.parse
@@ -5,6 +27,7 @@ import urllib.request
 import re
 from typing import Tuple, Optional, Set, List
 
+# Explicitly blocked IPv4 and IPv6 CIDR ranges (RFC 1918, link-local, cloud metadata, test networks)
 BLOCKED_IP_NETWORKS = [
     ipaddress.ip_network('127.0.0.0/8'),        # IPv4 loopback
     ipaddress.ip_network('10.0.0.0/8'),         # RFC 1918 Private
@@ -185,9 +208,11 @@ def safe_fetch_document(
     3. Stream chunking with strict size bound (10MB limit)
     4. Timeout enforcement
     """
+    # Step 1: Pre-flight SSRF check - scheme, hostname, and resolved IP verification
     effective_max_size = max_size if max_size is not None else max_size_bytes
     safe_url, _, _ = validate_url_safety(url)
 
+    # Step 2: Construct standard browser headers to prevent basic scraping blocks on legitimate supplier portals
     req = urllib.request.Request(
         safe_url,
         headers={
@@ -205,17 +230,19 @@ def safe_fetch_document(
         }
     )
 
+    # Step 3: Attach custom redirect handler to intercept and re-verify every redirect hop
     redirect_handler = SafeRedirectHandler()
     opener = urllib.request.build_opener(redirect_handler)
 
     try:
+        # Step 4: Execute HTTP fetch within timeout and re-verify final destination URL
         with opener.open(req, timeout=timeout) as response:
             final_url = response.geturl()
             validate_url_safety(final_url)
 
             content_type = response.headers.get("Content-Type", "application/octet-stream").lower()
 
-            # Stream read in chunks to strictly enforce size limits
+            # Step 5: Bounded chunk streaming to prevent memory exhaustion
             chunks = []
             total_read = 0
             chunk_size = 64 * 1024  # 64 KB chunks

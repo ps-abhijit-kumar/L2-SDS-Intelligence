@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from src.schema import SDSValidationResult, VerificationResult, ActionDecision, SDSEvidence, is_valid_http_url
+from src.core.schema import SDSValidationResult, VerificationResult, ActionDecision, SDSEvidence, is_valid_http_url
 
 def test_sds_validation_result_valid():
     res = SDSValidationResult(

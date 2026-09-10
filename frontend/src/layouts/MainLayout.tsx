@@ -1,3 +1,11 @@
+/**
+ * Main Application Shell Layout
+ * =============================
+ * Architecture Role:
+ *   Provides the persistent layout wrapper for the entire SDS Intelligence command center,
+ *   including the global sidebar navigation, top header bar, and system status alerts.
+ */
+
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/common/Sidebar';

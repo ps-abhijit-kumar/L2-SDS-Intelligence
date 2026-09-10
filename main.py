@@ -1,3 +1,25 @@
+"""
+CLI Batch Processing Entry Point
+================================
+Architecture Role:
+    Provides an automated, headless command-line interface for executing batch SDS retrieval
+    and verification across Excel workbooks using the LangGraph agent and FastMCP server.
+
+Execution Lifecycle:
+    1. Environment & MCP Initialization:
+       Connects to the isolated FastMCP server over stdio via `SDSMCPClient`.
+    2. Request Ingestion:
+       Fetches all pending, semantically normalized chemical SDS requests from the active workbook.
+    3. LangGraph Orchestration:
+       Iterates through each request, passing initial state to `create_sds_graph()`.
+    4. Two-Way Excel Synchronization:
+       Updates the source Excel workbook in real time with the verified Found URL, Status verdict,
+       Confidence score, and Reasoning via `mcp_client.update_request_status()`.
+    5. Persistent Audit Logging:
+       Appends complete trace payloads (inputs, message history, verification decisions, and timestamps)
+       to `logs/agent_trace.jsonl`.
+"""
+
 import asyncio
 import json
 import time
@@ -6,9 +28,9 @@ import uuid
 from datetime import datetime, timezone
 import dotenv
 
-from src.workflow import create_sds_graph
-from src.mcp_client import SDSMCPClient
-from src.schema import SDSValidationResult
+from src.agent.workflow import create_sds_graph
+from src.mcp.mcp_client import SDSMCPClient
+from src.core.schema import SDSValidationResult
 
 dotenv.load_dotenv()
 

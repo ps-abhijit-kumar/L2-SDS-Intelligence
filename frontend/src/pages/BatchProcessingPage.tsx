@@ -1,3 +1,15 @@
+/**
+ * Batch Excel Processing Command Page
+ * ===================================
+ * Architecture Role:
+ *   Main operations interface for high-throughput chemical Safety Data Sheet batch processing:
+ *   - Uploads multi-sheet Excel spreadsheets.
+ *   - Analyzes worksheet structures, detects column mappings, and isolates active SDS request datasets.
+ *   - Monitors asynchronous batch execution progress in real time with 1.5s polling.
+ *   - Displays tabular verification status with in-line confidence badges and deep detail modals.
+ *   - Exports enriched Excel workbooks containing verified URLs, statuses, and reasoning.
+ */
+
 import React, { useState } from 'react';
 import { Layers, RefreshCw, Download } from 'lucide-react';
 import { BatchUploadCard } from '../components/batch/BatchUploadCard';

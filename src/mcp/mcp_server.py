@@ -1,8 +1,34 @@
+"""
+FastMCP Excel & Document Inspection Server
+==========================================
+Architecture Role:
+    Implements a Model Context Protocol (MCP) server using FastMCP to provide
+    isolated, protocol-governed tool access for Excel file operations and safe document inspection.
+
+Subsystem Isolation & Protocol Governance:
+    - Runs as an independent subprocess communicating over standard input/output (stdio).
+    - Prevents Excel file locking contention, openpyxl memory accumulation, and unhandled
+      retrieval crashes from destabilizing the main FastAPI or agent processes.
+    - Path depth calculation (depth 3: src/mcp/mcp_server.py -> src/mcp -> src -> project root)
+      ensures seamless import resolution regardless of subprocess invocation directory.
+
+Exposed MCP Tools:
+    1. get_pending_requests:
+       Inspects the active Excel workbook using semantic column mapping and sheet classification,
+       returning a JSON serialized array of pending chemical SDS requests.
+    2. update_request_status:
+       Applies atomic, in-place updates to the target worksheet, recording Found URL,
+       Status, Confidence, and Reasoning columns.
+    3. inspect_sds_document:
+       Safely downloads and extracts structured chemical evidence (GHS sections, CAS numbers,
+       product identity) behind the SSRF protection boundary.
+"""
+
 import os
 import sys
 
-# Ensure project root is on sys.path for subprocess invocations
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Ensure project root is on sys.path for subprocess invocations (depth 3: src/mcp/mcp_server.py -> src/mcp -> src -> project root)
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -12,7 +38,7 @@ import pandas as pd
 from typing import Optional, Dict, Any, List, Set
 from mcp.server.fastmcp import FastMCP
 
-from src.workbook_utils import (
+from src.excel.workbook_utils import (
     COLUMN_SYNONYMS,
     INVALID_PRODUCT_VALUES,
     is_valid_product_value,
@@ -20,8 +46,8 @@ from src.workbook_utils import (
     classify_sheet,
     inspect_workbook
 )
-from src.security import safe_fetch_document, SecurityError
-from src.sds_parser import parse_sds_document
+from src.core.security import safe_fetch_document, SecurityError
+from src.retrieval.sds_parser import parse_sds_document
 
 mcp = FastMCP("ExcelMCP")
 

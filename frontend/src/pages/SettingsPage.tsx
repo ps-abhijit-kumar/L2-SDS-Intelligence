@@ -82,7 +82,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="p-3.5 bg-[#070A12] rounded-xl border border-white/[0.06] flex justify-between items-center">
               <span className="text-slate-400">FastMCP Protocol Server</span>
-              <span className="font-mono text-emerald-400">src/mcp_server.py (Stdio)</span>
+              <span className="font-mono text-emerald-400">src/mcp/mcp_server.py (Stdio)</span>
             </div>
           </div>
         </Card>

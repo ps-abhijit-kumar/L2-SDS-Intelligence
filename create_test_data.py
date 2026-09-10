@@ -1,3 +1,11 @@
+"""
+Synthetic Test Data Generation Utility
+======================================
+Architecture Role:
+    Generates realistic chemical SDS test request records for local development,
+    smoke tests, and spreadsheet batch processing demonstration (`sample_requests_eval.xlsx`).
+"""
+
 import pandas as pd
 import random
 
